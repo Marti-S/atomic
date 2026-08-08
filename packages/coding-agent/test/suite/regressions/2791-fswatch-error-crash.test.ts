@@ -1,9 +1,18 @@
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { bunExecutable } from "../../../../../test/helpers/runtime.ts";
+
+/**
+ * Structural: the test must start a real Bun process so `mock.module` can
+ * intercept the theme module's node:fs import before its code runs. It uses an
+ * in-memory watcher and imports global-theme directly, but a busy runner still
+ * needs an isolated child deadline.
+ */
+const REAL_BUN_THEME_WATCHER_TIMEOUT_MS = 20_000;
 
 /**
  * Regression test for https://github.com/earendil-works/pi-mono/issues/2791
@@ -13,7 +22,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
  * treats it as an uncaught exception and terminates the process.
  *
  * We test this by spawning a child process that:
- * 1. Wraps node:fs.watch to capture the watcher returned by the theme code
+ * 1. Replaces node:fs.watch with a captured in-memory watcher
  * 2. Sets up a custom theme with the watcher enabled
  * 3. Emits a synthetic 'error' event on the captured watcher
  * 4. If the watcher has no error handler -> crash (exit != 0) -> bug present
@@ -40,34 +49,30 @@ describe("issue #2791 fs.watch error event crashes process", () => {
 	});
 
 	it("process should survive an error event on the theme FSWatcher", () => {
-		const themeModuleUrl = pathToFileURL(join(__dirname, "../../../src/modes/interactive/theme/theme.ts")).href;
+		const globalThemeModuleUrl = pathToFileURL(
+			join(__dirname, "../../../src/modes/interactive/theme/global-theme.ts"),
+		).href;
 		const agentDir = join(tempRoot, "agent");
 
 		// Script that sets up the watcher and emits a synthetic error on it.
 		// If no .on('error') handler is attached, EventEmitter.emit('error')
 		// throws, which either crashes the process or gets caught by our try/catch.
-		const scriptPath = join(tempRoot, "test-watcher-error.mts");
-		writeFileSync(
-			scriptPath,
-			`
-
+		const script = `
 import { mock } from "bun:test";
+import { EventEmitter } from "node:events";
 import * as realFs from "node:fs";
 
-const realWatch = realFs.watch;
 let fsWatcher;
 
 mock.module("node:fs", () => ({
 	...realFs,
-	watch: (...args) => {
-		fsWatcher = realWatch(...args);
+	watch: () => {
+		fsWatcher = Object.assign(new EventEmitter(), { close() {} });
 		return fsWatcher;
 	},
 }));
 
-process.env.ATOMIC_CODING_AGENT_DIR = ${JSON.stringify(agentDir)};
-
-const { setTheme, stopThemeWatcher } = await import(${JSON.stringify(themeModuleUrl)});
+const { setTheme, stopThemeWatcher } = await import(${JSON.stringify(globalThemeModuleUrl)});
 setTheme("custom-test", true);
 
 if (!fsWatcher) {
@@ -91,27 +96,41 @@ try {
 
 stopThemeWatcher();
 process.exit(0);
-`,
-		);
+`;
 
-		let _stdout = "";
-		let stderr = "";
-		let exitCode: number;
-		try {
-			_stdout = execFileSync("bun", [scriptPath], {
-				timeout: 10000,
-				encoding: "utf-8",
-				env: { ...process.env, ATOMIC_CODING_AGENT_DIR: agentDir },
-				stdio: ["pipe", "pipe", "pipe"],
-			});
-			exitCode = 0;
-		} catch (err: unknown) {
-			const e = err as { status: number; stdout: string; stderr: string };
-			_stdout = e.stdout ?? "";
-			stderr = e.stderr ?? "";
-			exitCode = e.status ?? 1;
+		const child = spawnSync(bunExecutable(), ["--eval", script], {
+			timeout: REAL_BUN_THEME_WATCHER_TIMEOUT_MS,
+			encoding: "utf-8",
+			env: { ...process.env, ATOMIC_CODING_AGENT_DIR: agentDir },
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+		const timedOut = child.error !== undefined && "code" in child.error && child.error.code === "ETIMEDOUT";
+		if (timedOut) {
+			throw new Error(
+				[
+					`Theme watcher child timed out after ${REAL_BUN_THEME_WATCHER_TIMEOUT_MS}ms while Bun ran under load.`,
+					"This is test-infrastructure starvation, not the #2791 FSWatcher crash. Retry on a runner with capacity.",
+					`stderr: ${child.stderr.trim()}`,
+				].join("\n"),
+			);
 		}
 
-		expect(exitCode, `Child crashed (exit ${exitCode}). stderr: ${stderr.trim()}`).toBe(0);
+		if (child.signal !== null) {
+			throw new Error(
+				[
+					`Theme watcher child was killed by ${child.signal} before it could report an exit code.`,
+					"This is test-infrastructure pressure, not the #2791 FSWatcher crash.",
+					`stderr: ${child.stderr.trim()}`,
+				].join("\n"),
+			);
+		}
+
+		expect(child.error, `Could not start Bun child: ${child.error?.message ?? ""}`).toBeUndefined();
+		const crashDiagnostic = [
+			`Theme watcher child exited non-zero (exit ${child.status ?? child.signal ?? "unknown"}).`,
+			"This may be the #2791 FSWatcher crash.",
+			`stderr: ${child.stderr.trim()}`,
+		].join("\n");
+		expect(child.status, crashDiagnostic).toBe(0);
 	});
 });
