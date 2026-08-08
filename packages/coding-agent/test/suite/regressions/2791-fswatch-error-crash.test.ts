@@ -6,6 +6,9 @@ import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bunExecutable } from "../../../../../test/helpers/runtime.ts";
 
+/** Deadline for the real Bun child that runs Bun-only mock.module. */
+const subprocessTimeoutMs = 10_000;
+
 /**
  * Regression test for https://github.com/earendil-works/pi-mono/issues/2791
  *
@@ -91,7 +94,7 @@ process.exit(0);
 `;
 
 		const child = spawnSync(bunExecutable(), ["--eval", script], {
-			timeout: 10000,
+			timeout: subprocessTimeoutMs,
 			encoding: "utf-8",
 			env: { ...process.env, ATOMIC_CODING_AGENT_DIR: agentDir },
 			stdio: ["pipe", "pipe", "pipe"],
@@ -100,7 +103,7 @@ process.exit(0);
 		if (timedOut) {
 			throw new Error(
 				[
-					"Theme watcher child timed out after 10 seconds.",
+					`Theme watcher child timed out after ${subprocessTimeoutMs}ms.`,
 					"This is test-infrastructure starvation, not the #2791 FSWatcher crash. Retry on a runner with capacity.",
 					`stderr: ${child.stderr.trim()}`,
 				].join("\n"),
