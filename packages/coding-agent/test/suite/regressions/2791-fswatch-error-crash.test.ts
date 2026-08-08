@@ -7,14 +7,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bunExecutable } from "../../../../../test/helpers/runtime.ts";
 
 /**
- * Structural: the test must start a real Bun process so `mock.module` can
- * intercept the theme module's node:fs import before its code runs. It uses an
- * in-memory watcher and imports global-theme directly, but a busy runner still
- * needs an isolated child deadline.
- */
-const REAL_BUN_THEME_WATCHER_TIMEOUT_MS = 20_000;
-
-/**
  * Regression test for https://github.com/earendil-works/pi-mono/issues/2791
  *
  * fs.watch() returns an FSWatcher (EventEmitter). If the watcher emits an
@@ -99,7 +91,7 @@ process.exit(0);
 `;
 
 		const child = spawnSync(bunExecutable(), ["--eval", script], {
-			timeout: REAL_BUN_THEME_WATCHER_TIMEOUT_MS,
+			timeout: 10000,
 			encoding: "utf-8",
 			env: { ...process.env, ATOMIC_CODING_AGENT_DIR: agentDir },
 			stdio: ["pipe", "pipe", "pipe"],
@@ -108,7 +100,7 @@ process.exit(0);
 		if (timedOut) {
 			throw new Error(
 				[
-					`Theme watcher child timed out after ${REAL_BUN_THEME_WATCHER_TIMEOUT_MS}ms while Bun ran under load.`,
+					"Theme watcher child timed out after 10 seconds.",
 					"This is test-infrastructure starvation, not the #2791 FSWatcher crash. Retry on a runner with capacity.",
 					`stderr: ${child.stderr.trim()}`,
 				].join("\n"),
