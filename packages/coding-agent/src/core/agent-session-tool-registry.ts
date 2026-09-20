@@ -1,6 +1,7 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { AgentSessionInternalSurface as AgentSession } from "./agent-session-methods.ts";
 import type { ToolDefinitionEntry } from "./agent-session-types.js";
+import { createHostInvestigationTool } from "./extensions/decider-investigation.js";
 import { ExtensionRunner, type ToolDefinition, wrapRegisteredTools } from "./extensions/index.js";
 import { isMandatoryRuntimeTool, isTrustedMandatoryRuntimeTool } from "./mandatory-runtime-tools.ts";
 import { ModelRegistry } from "./model-registry.ts";
@@ -42,6 +43,15 @@ export function _refreshToolRegistry(
 				sourceInfo: createSyntheticSourceInfo(`<sdk:${definition.name}>`, { source: "sdk" }),
 			})),
 	].filter((tool) => isExposedTool(tool.definition.name));
+	const investigation = isExposedTool("investigate_code") && isExposedTool("read") && isExposedTool("search")
+		? createHostInvestigationTool(this)
+		: undefined;
+	if (investigation) {
+		if (allCustomTools.some((tool) => tool.definition.name === investigation.name)) {
+			throw new Error("Host-managed investigate_code cannot be overridden by another extension.");
+		}
+		allCustomTools.push({ definition: investigation, sourceInfo: createSyntheticSourceInfo("<host:investigate_code>", { source: "builtin" }) });
+	}
 	const definitionRegistry = new Map<string, ToolDefinitionEntry>(
 		Array.from(this._baseToolDefinitions.entries())
 			.filter(([name]) => isExposedTool(name))
@@ -116,6 +126,9 @@ export function _refreshToolRegistry(
 		}
 	}
 
+	if (investigation && !previousRegistryNames.has(investigation.name) && nextActiveToolNames.includes("read") && nextActiveToolNames.includes("search")) {
+		nextActiveToolNames.push(investigation.name);
+	}
 	this.setActiveToolsByName([...new Set(nextActiveToolNames)]);
 }
 

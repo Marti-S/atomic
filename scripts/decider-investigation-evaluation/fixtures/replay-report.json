@@ -1,0 +1,359 @@
+{
+  "schemaVersion": 1,
+  "measurementKind": "contains-fixtures",
+  "population": {
+    "allInvoked": 4,
+    "eligible": 3,
+    "excluded": 1,
+    "exclusionReasons": {
+      "predeclared unsupported binary-only task": 1
+    },
+    "tuningRows": 1
+  },
+  "candidates": {
+    "usefulCoverage": {
+      "numerator": 2,
+      "denominator": 3,
+      "value": 0.6666666666666666
+    },
+    "unlabeledDecisions": 0
+  },
+  "selection": {
+    "acceptance": {
+      "numerator": 2,
+      "denominator": 3,
+      "value": 0.6666666666666666
+    },
+    "utility": {
+      "numerator": 2,
+      "denominator": 2,
+      "value": 1.0
+    },
+    "calibrationAtCoverage": [
+      {
+        "minProbability": 0,
+        "coverage": {
+          "numerator": 2,
+          "denominator": 3,
+          "value": 0.6666666666666666
+        },
+        "utility": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "meanConfidence": 0.9
+      },
+      {
+        "minProbability": 0.5,
+        "coverage": {
+          "numerator": 2,
+          "denominator": 3,
+          "value": 0.6666666666666666
+        },
+        "utility": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "meanConfidence": 0.9
+      },
+      {
+        "minProbability": 0.7,
+        "coverage": {
+          "numerator": 2,
+          "denominator": 3,
+          "value": 0.6666666666666666
+        },
+        "utility": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "meanConfidence": 0.9
+      },
+      {
+        "minProbability": 0.8,
+        "coverage": {
+          "numerator": 2,
+          "denominator": 3,
+          "value": 0.6666666666666666
+        },
+        "utility": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "meanConfidence": 0.9
+      },
+      {
+        "minProbability": 0.9,
+        "coverage": {
+          "numerator": 2,
+          "denominator": 3,
+          "value": 0.6666666666666666
+        },
+        "utility": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "meanConfidence": 0.9
+      }
+    ]
+  },
+  "arms": {
+    "A": {
+      "invoked": 3,
+      "missing": 0,
+      "verifiedSuccess": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "unverified": 0,
+      "evidenceUseful": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "handoff": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "statusCounts": {
+        "completed": 3
+      },
+      "metrics": {
+        "investigationMs": {
+          "n": 3,
+          "p50": 1000.0,
+          "p95": 1000.0
+        },
+        "totalTaskMs": {
+          "n": 3,
+          "p50": 6000.0,
+          "p95": 6000.0
+        },
+        "llmTurns": {
+          "n": 3,
+          "p50": 4.0,
+          "p95": 4.0
+        },
+        "tools": {
+          "n": 3,
+          "p50": 2.0,
+          "p95": 2.0
+        }
+      },
+      "service": {
+        "cold": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        },
+        "warm": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        },
+        "outage": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        },
+        "overloaded": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        }
+      }
+    },
+    "B": {
+      "invoked": 3,
+      "missing": 0,
+      "verifiedSuccess": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "unverified": 0,
+      "evidenceUseful": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "handoff": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "statusCounts": {
+        "completed": 3
+      },
+      "metrics": {
+        "investigationMs": {
+          "n": 3,
+          "p50": 650.0,
+          "p95": 695.0
+        },
+        "totalTaskMs": {
+          "n": 3,
+          "p50": 5650.0,
+          "p95": 5695.0
+        },
+        "llmTurns": {
+          "n": 3,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "tools": {
+          "n": 3,
+          "p50": 3.0,
+          "p95": 3.0
+        }
+      },
+      "service": {
+        "cold": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        },
+        "warm": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        },
+        "outage": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        },
+        "overloaded": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        }
+      }
+    },
+    "C": {
+      "invoked": 3,
+      "missing": 0,
+      "verifiedSuccess": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "unverified": 0,
+      "evidenceUseful": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "handoff": {
+        "numerator": 3,
+        "denominator": 3,
+        "value": 1.0
+      },
+      "statusCounts": {
+        "completed": 3
+      },
+      "metrics": {
+        "investigationMs": {
+          "n": 3,
+          "p50": 650.0,
+          "p95": 1864.9999999999998
+        },
+        "totalTaskMs": {
+          "n": 3,
+          "p50": 5650.0,
+          "p95": 6865.0
+        },
+        "llmTurns": {
+          "n": 3,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "tools": {
+          "n": 3,
+          "p50": 2.0,
+          "p95": 2.0
+        }
+      },
+      "service": {
+        "cold": {
+          "n": 1,
+          "p50": 650.0,
+          "p95": 650.0
+        },
+        "warm": {
+          "n": 1,
+          "p50": 600.0,
+          "p95": 600.0
+        },
+        "outage": {
+          "n": 1,
+          "p50": 2000.0,
+          "p95": 2000.0
+        },
+        "overloaded": {
+          "n": 0,
+          "p50": null,
+          "p95": null
+        }
+      }
+    }
+  },
+  "pairedChanges": {
+    "llmTurnsRemoved": {
+      "pairs": 3,
+      "mean": 2,
+      "p50": 2.0,
+      "p95": 2.0
+    },
+    "extraToolWork": {
+      "pairs": 3,
+      "mean": 0,
+      "p50": 0.0,
+      "p95": 0.0
+    },
+    "totalTaskLatencyChange": {
+      "pairs": 3,
+      "mean": 150,
+      "p50": -150.0,
+      "p95": 885.0
+    }
+  },
+  "pairedVerifiedSuccess": {
+    "pairs": 3,
+    "repositories": 3,
+    "meanDifference": 0.0,
+    "lower95": 0.0,
+    "upper95": 0.0,
+    "replicates": 10000,
+    "seed": 20260920,
+    "method": "paired percentile bootstrap, clusters=resampled repositories, interval=2.5th..97.5th percentile"
+  },
+  "pairedLatency": {
+    "pairs": 3,
+    "medians": {
+      "A": 1000.0,
+      "B": 650.0,
+      "C": 650.0
+    },
+    "improvementVsA": 0.35
+  },
+  "proposedMetricGates": {
+    "liveHeldOutPopulation": false,
+    "completeVerifiedOutcomes": true,
+    "usefulCandidateCoverage95": false,
+    "decisionAcceptance30": true,
+    "pairedSuccessLowerBound": true,
+    "medianLatencyImprovement20": true,
+    "lowerMedianThanDeterministic": false
+  },
+  "metricGatesPass": false,
+  "rolloutApproved": false,
+  "reviewRequired": "Safety conformance, profile provenance, eligible-slice declaration, p95/full-workflow regressions, and human pilot review are separate gates."
+}

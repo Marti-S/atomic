@@ -3,6 +3,7 @@ import type { AgentLoopTurnUpdate, PrepareNextTurnContext } from "@earendil-work
 import { normalizeToolResultImages } from "../utils/tool-result-images.js";
 import type { AgentSessionInternalSurface as AgentSession } from "./agent-session-methods.ts";
 import { assertToolPairingInvariant } from "./context-tool-pairing.js";
+import { emitGuardedToolCall, emitGuardedToolResult } from "./tools/internal-dispatch.js";
 import { redirectOversizedToolResult } from "./tools/oversized-tool-result.js";
 
 export function _installAgentToolHooks(this: AgentSession): void {
@@ -15,7 +16,7 @@ export function _installAgentToolHooks(this: AgentSession): void {
 		await this._agentEventQueue;
 
 		try {
-			const result = await runner.emitToolCall({
+			const result = await emitGuardedToolCall(runner, {
 				type: "tool_call",
 				toolName: toolCall.name,
 				toolCallId: toolCall.id,
@@ -38,7 +39,8 @@ export function _installAgentToolHooks(this: AgentSession): void {
 	this.agent.afterToolCall = async ({ toolCall, args, result, isError }) => {
 		const runner = this._extensionRunner;
 		const hookResult = runner.hasHandlers("tool_result")
-			? await runner.emitToolResult(
+			? await emitGuardedToolResult(
+					runner,
 					{
 						type: "tool_result",
 						toolName: toolCall.name,
