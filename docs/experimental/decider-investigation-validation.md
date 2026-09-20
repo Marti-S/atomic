@@ -28,7 +28,7 @@ The user later said **"continue workflow"**, superseding the evidence-only bound
 - Make only the stored-credential OAuth refresh-failure case deterministic at the provider HTTP boundary. Preserve exit 5, empty stdout and byte-identical stored auth; separately cover existing timeout taxonomy. No production exit-code or budget changes.
 - Repair only the timing-sensitive detached-output fixture using deterministic control, preserving meaningful actual process/pipe evidence and adding below/above-idle-cutoff coverage. Do not change the production 100ms cutoff, other timers, drain policy or suite budgets. A smaller sleep alone is not sufficient.
 
-All other test-contract changes still require approval. Dependency-level resolver repair remains a proposal, not an authorized or applied change.
+The user subsequently selected **"Keep dependency unchanged (Recommended)"**. No Jiti patch, fork, pin, lockfile change, production monkeypatch or retained diagnostic node_modules modification is authorized. The single-comparison resolver proposal is deferred. All other test-contract changes still require approval.
 
 ## Repairs and durable regression evidence
 
@@ -60,6 +60,18 @@ Round 3 exact commands, before/after outputs, mutation configurations and checks
 
 See `oauth/commands.md` and `drain/commands.md`. Focused checks do not replace complete gates; no full suites were run during this incorporation. Authoritative `npm run check` passed with exit 0 under Node22.19/Bun1.4.2 and isolated HOME; `check.command`, `check.log` and `check.exit` record the environment and result. Qlty on these test paths reported zero analyzed files, so its exit 0 is not substantive smell coverage. Biome remains authoritative.
 
+## Coordinated final-candidate validation
+
+Exactly one complete root run followed by one complete package run executed on clean candidate `9ecaea97b81bbd1e0388751da6d3a6d1a01cbb6f`, with Node22.19.0, Bun1.4.2 and isolated HOME. The approved fixture repairs were the concrete code change; initial host load was 8.83/7.33/9.06 rather than the earlier 47–116 observations. Load is not asserted as causal. No build overlapped either run, and generated subagent/workflow NODE_ENV predicates were verified dynamic before execution. Existing concurrency and budgets were unchanged. No additional retry followed.
+
+Exact wrapper, environment, preflight, start/end timestamps, exit files, full logs and failure lists are archived at:
+
+`/Users/martistaerfeldt/.atomic/agent/sessions/--Users-martistaerfeldt-dev-atomic-decider-investigation--/subagent-artifacts/validation/8df57b4a`
+
+Root exited 1: **9,935 passed, 23 skipped, one failed**, in 449.63s. The remaining failure is `default-tools-setting > preserves explicit tool option precedence over the setting`, a 30s timeout. Package exited 1: **4,914 passed, 52 skipped, 19 failed**, in 579.23s. All 19 failures are 30s timeouts across runtime events, shell ownership, Herdr reload, deferred startup, SDK builtin parity and runtime replacement. OAuth and detached-output fixture assertions no longer fail in the complete package run. These results supersede the earlier root8/package20 counts, not the unmet gate status.
+
+Manifest diffs are empty. An offline cached `npm pack jiti@2.7.0 --ignore-scripts` comparison found the installed `dist/jiti.cjs` byte hash identical to the package archive: `a0b3b8d5e06a0519c66b62179e29200533057920f6f11370546e979dacd24c49`. No dependency was installed or changed. This verifies the investigated resolver bundle, not every node_modules file.
+
 ## Environment and exact command evidence
 
 Round 2 logs, command files, exit codes, scripts, timing evidence and checksums are archived privately at:
@@ -86,11 +98,11 @@ Four personal `~/.agents/skills` also contaminated SDK tests expecting no skills
 | `npm run test:ci-contracts` | Exit0,115tests/18files, `ci-final.log`; generated runtime predicates inspected afterward. |
 | `npm run test:scripts` | Exit0,122pass/12platform skips, `scripts-final.log`, including new cleanup regression. |
 | `npm run test:integration` | Exit0,1161pass/12skip,83passed/2skipped files,880.78s, `integration-final.log`. Includes packed Node consumer and installed-package coverage. |
-| `npm run test:unit` | Latest isolated-HOME exit1:9928pass/23skip/8fail, `unit-isolated.log`. Earlier repaired run9934pass/2fail; runtime-location retry9935pass/1fail. None is a passing complete gate. |
-| `npm run test --workspace=@bastani/atomic` | Latest isolated-HOME exit1:4910pass/52skip/20fail, `package-isolated.log`. Earlier repaired run4908pass/22fail. None is a passing complete gate. |
+| `npm run test:unit` | Candidate9ecaea97: exit1,9935pass/23skip/1fail; archive8df57b4a `unit.log/exit`. Exact remaining timeout described above. |
+| `npm run test --workspace=@bastani/atomic` | Candidate9ecaea97: exit1,4914pass/52skip/19fail; archive8df57b4a `package.log/exit`. All failures are timeouts; approved fixture assertions pass. |
 | Supplemental Qlty | `qlty smells --no-upgrade-check packages/coding-agent/src/core/structured-output/system-one.ts packages/coding-agent/scripts/copy-builtin-packages.ts` exits0; existing duplication reports retained, no speculative refactoring. Existing configuration preserved. |
 
-Round 2 build/check and suites ran sequentially; no generated-data rebuild overlapped integration/package execution. Those complete-run results precede the approved round 3 test changes and are not new final-candidate evidence. Existing suite concurrency and budgets remain unchanged. Coordinated complete validation remains pending.
+Round 2 build/check and suites ran sequentially; no generated-data rebuild overlapped integration/package execution. Integration1161, CI115, scripts122 and focused/Linux51 are prior green results on the same production code, not rerun by final validation. Root/package rows above are the new candidate9ecaea97 runs. Later evidence-only edits do not change executable code or tests.
 
 ## Acceptance matrix
 
@@ -103,10 +115,10 @@ Round 2 build/check and suites ran sequentially; no generated-data rebuild overl
 | Clean install/build/Biome/typechecks/shrinkwrap | Exact successful commands above. |
 | Focused Node/Python conformance | Successful macOS/Linux/HTTP/Python results above; not substituted for full suites. |
 | Private fresh replay, no synthetic evidence rewriting | Semantic equality, explicit fixture status and rollout false. |
-| Complete root unit | Still red; exact latest failures retained in issues.md/logs. |
+| Complete root unit | Still red1fail on candidate9ecaea97; exact timeout retained in issues.md and archive8df57b4a. |
 | Complete root integration | Green1161pass, includes installed package. |
 | Complete CI and script suites | Green115 and122pass respectively. |
-| Complete coding-agent suite | Still red20fail; exact logs retained. |
+| Complete coding-agent suite | Still red19fail on candidate9ecaea97; exact timeout names/stacks retained in archive8df57b4a. |
 | Explicit Jev/router/installed coverage | Root includes jev-tournament, jev-stored-auth-routing, structured-output-provider-contracts, router-output-repair, workflow-router and subagent-model-router suites. Package includes model-runtime-jev-auth. Integration includes installed-package-node-extensions and now passes in full. |
 | Default-off and unsupported non-registration | Absent/disabled/unresolved-account configuration returns no tool; unsupported macOS SDK smoke and actual Linux UID regression. |
 | Strict host-only configuration and secrets | OS-account path, private owner/mode, outside-repository checks, closed schema and dedicated token; negative conformance probes pass. |
@@ -124,6 +136,7 @@ Round 2 build/check and suites ran sequentially; no generated-data rebuild overl
 | Continue-workflow amendment | Resumed focused repairs; no blind full reruns or unapproved dependency changes. |
 | OAuth test exception | Controlled rejection retains exit5/stdout/auth assertions; separate existing-deadline exit2 case. Focused two-case pass and failed-before evidence archived. |
 | Detached-output test exception | Real post-exit process/pipe coverage plus deterministic 99/101ms cases; five-case pass and mutation failures archived. Production timers unchanged. |
+| Keep-dependency-unchanged amendment | No Jiti/manifest changes; installed resolver bundle matches offline cached package hash. Proposal deferred. |
 | Fresh reviewers and approval | Workflow quorum/reducer still required; implementation does not grant acceptance. |
 
 ## Interfaces and state transitions
@@ -140,8 +153,8 @@ The earlier user-authorized attempt materialized Mapika/decider-2b model/tokeniz
 
 ## Remaining failures and scope
 
-Latest unit failures comprise seven 30s timeouts and one bounded shortcut-delivery assertion. Latest package failures comprise eighteen 30s timeouts plus credential exit-code and detached-output timing assertions. The latter two unchanged cases pass in a narrow two-test run in 2.79s. The unchanged default-tools and shortcut files subsequently pass all ten tests in 72.60s (`root-timing-narrow.log`). Earlier narrow default-tools/metadata and runtime-events/system-prompt runs also passed. These checks diagnose timing sensitivity but do not replace the failing complete gates.
+The latest complete runs leave one root timeout and nineteen package timeouts. The earlier shortcut, credential and detached-output assertions are not failures in these runs; historical narrow passes remain diagnostic rather than substitutes for complete gates. Both complete gates still exit 1.
 
-Host load and Jiti resolution cost are observations, not proof that every failure is environmental. Further scratch resolver instrumentation demonstrates expensive missing-path exception construction; an in-memory nonthrowing preflight reduces that work in a selected lifecycle case. This is diagnostic comparison, not a benchmark or complete-gate proof. No dependency, node_modules or loader patch was applied. A maintained dependency-level remedy requires a separate decision. The newly approved fixture repairs address their demonstrated nondeterminism, but full root/package green and the remaining timeout/shortcut causes are still unproven.
+Host load and Jiti resolution cost are observations, not proof that every failure is environmental. Scratch resolver instrumentation demonstrates expensive missing-path exception construction; an in-memory nonthrowing preflight reduces that work in a selected lifecycle case. This is a single diagnostic comparison, not a benchmark or complete-gate proof. The user selected "Keep dependency unchanged (Recommended)": the dependency-level remedy remains deferred and unapplied. No source repair or further broad retry was made during this validation.
 
 Out-of-scope complexity refactoring is deferred. Required root/package green and independent approval remain unproven; issues.md stays until resolved.
