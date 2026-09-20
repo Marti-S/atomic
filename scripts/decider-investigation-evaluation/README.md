@@ -4,6 +4,13 @@ These runners support the specification's third change set. **Checked-in data ar
 contract fixtures, not measurements of Decider or current Atomic.** They cannot produce an
 approved deployment profile or establish non-inferiority.
 
+For live runs, record the manifest's exact device, dtype, runtime fingerprint and token cap.
+The standalone service supports explicit MPS eager float32; graph execution requires CUDA.
+Separate startup/readiness time from first post-readiness and warm request time, retaining
+the existing request deadline. Report cap rejections and deadline failures, never omit or
+truncate them. A passing smoke or lower-cap deployment is not a calibrated profile or proof
+of success at the default 8,192-token capacity. See the [operator guide](../../docs/experimental/decider-investigation.md).
+
 ## Reproduce the offline report
 
 From the Atomic root:

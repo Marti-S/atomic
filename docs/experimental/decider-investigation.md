@@ -36,9 +36,10 @@ There is no shell command generation or shell interpreter invocation.
 
 A persistent, host-owned session directory outside the repository is required for audit.
 The local service requires Python 3.11+ and the pinned Decider implementation's dependencies.
-GPU service tests are separate from CPU conformance tests. CPU model inference is possible
-with a compatible explicit manifest, but its suitability for a two-second decision deadline
-has not been established here.
+CPU and accelerator inference require an explicit compatible manifest. On Apple silicon,
+the standalone service supports MPS eager inference; repository-tool registration still
+requires Linux and is disabled by default. Validate the selected runtime and request sizes
+against the unchanged two-second request deadline.
 
 V1 does not edit, execute tests/builds, install or call LSPs, run subagents, browse, use external
 network tools, generate novel queries, implement Score/Noul, change `routerModel`, retry
@@ -80,8 +81,18 @@ python scripts/decider-investigation-service/make_manifest.py \
 ```
 
 The placeholders above are intentionally not runnable checkpoint choices. Supply the exact
-revisions used in the held-out evaluation. `--use-graphs` is opt-in; graphs/dtype/device are
-fingerprinted. The default service token is not generated or persisted in this repository:
+revisions used in the held-out evaluation. `--use-graphs` is opt-in and requires CUDA;
+graphs/dtype/device are fingerprinted. For an available named Apple MPS accelerator, add
+`--device mps --dtype float32` to the manifest command and omit `--use-graphs`.
+MPS identity includes the accelerator, macOS version and architecture. After any identity
+change, regenerate and review the manifest rather than reusing a CPU or older MPS profile.
+
+Use `--max-total-tokens` to declare a lower deployment limit when needed. The service rejects
+overflow, including scoring-path padding, rather than truncating input. A lower limit does
+not raise the request deadline or establish a production profile. Verify actual request shapes
+with the selected runtime. The default limit remains 8,192 tokens.
+
+The service token is not generated or persisted in this repository:
 
 ```sh
 export ATOMIC_DECIDER_SERVICE_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
@@ -96,6 +107,10 @@ literal loopback address and accepts authenticated `GET /health/ready` and `POST
 It returns 503 until model loading and warm-up finish, serializes inference, permits one queued
 request, and returns 429 when saturated. Disconnects/deadlines discard queued or late results;
 an HTTP cancellation is **not** a claim that a running GPU kernel was preempted.
+Startup and warm-up may take longer than two seconds while readiness remains false. Wait
+for authenticated readiness before inference; each subsequent request still has the same
+two-second deadline. Readiness alone does not establish that every allowed request size
+will finish within that deadline.
 
 Run the separately invoked live contract test against the already-running service:
 

@@ -29,12 +29,14 @@
 - SDK hosts can provide typed `HostInput` callbacks for confirmations, selection, text and questionnaires without a terminal. Replies are validated and carry session/request identity and cancellation; the onDiagnostic callback receives session-attributed operational messages ([#3105](https://github.com/bastani-inc/atomic/issues/3105)).
 - SDK human-input callbacks now answer durable workflow approvals and stage questionnaires, including nested workflows, with workflow/run identity. Withdrawing or replacing a host keeps unresolved approvals pending and rejects stale replies; the same definition can resume under a different host without repeating checkpointed tool effects ([#3105](https://github.com/bastani-inc/atomic/issues/3105)).
 - Added experimental, default-off code investigation for bounded read-only evidence gathering through an explicitly configured local Decider service on supported Linux hosts. Requires an approved deployment profile; no model snapshot, production thresholds or cloud fallback are supplied.
+- Added explicit Apple MPS eager float32 support to the experimental standalone Decider service, with accelerator and operating-system identity checks. Repository-tool registration remains Linux-only and disabled by default.
 
 ### Changed
 
 - Install/update telemetry pings now go to the Atomic version-adoption endpoint instead of pi.dev. First-interactive-launch triggers, opt-outs, and the independent update check are unchanged ([#2498](https://github.com/bastani-inc/atomic/issues/2498)).
 - Automatic subagent and workflow-stage model selection no longer includes system prompts as agent metadata, reducing routing input. Execution prompts are unchanged; self-contained subagents still use their system prompt as the task when no task is supplied.
 - SDK session creation now includes shipped Atomic builtin extensions and resources, shares CLI defaults, and completes extension startup before returning. Supply startup host bindings through the extensionBindings option; rebinding no longer repeats startup. Failed startup rolls back the partial session, and missing shipped packages report `code: "BuiltinUnavailable"` ([#3105](https://github.com/bastani-inc/atomic/issues/3105)).
+- Sped up Node session startup when loading editable TypeScript extensions, while preserving fresh module state, live host exports, and source changes on reload.
 
 ### Fixed
 

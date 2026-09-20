@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--weights-revision', required=True)
     parser.add_argument('--tokenizer-revision', required=True)
     parser.add_argument('--calibration-reference', required=True)
-    parser.add_argument('--device', choices=('cpu', 'cuda'), default='cuda')
+    parser.add_argument('--device', choices=('cpu', 'cuda', 'mps'), default='cuda')
     parser.add_argument('--dtype', choices=('float32', 'bfloat16'), default='bfloat16')
     parser.add_argument('--use-graphs', action='store_true')
     parser.add_argument('--max-total-tokens', type=int, default=8192)
@@ -35,7 +35,7 @@ def main():
                     questionVersion=QUESTION_VERSION, candidatePolicyVersion=CANDIDATE_POLICY_VERSION,
                     precision=PRECISION, maxTotalTokens=args.max_total_tokens,
                     device=args.device, dtype=args.dtype, useGraphs=args.use_graphs,
-                    runtime=runtime_identity(), files=files)
+                    runtime=runtime_identity(args.device), files=files)
     # Never overwrite an approved deployment's identity accidentally.
     with output.open('x', encoding='utf-8') as stream:
         json.dump(manifest, stream, indent=2, sort_keys=True, allow_nan=False)

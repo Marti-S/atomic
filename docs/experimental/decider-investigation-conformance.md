@@ -18,6 +18,13 @@ validation and unresolved gates are recorded in [source validation](decider-inve
 | Strict compatibility service | Exact token-item construction, no truncating builder, eager and graph-engine padding bounds, metadata/startup/runtime checks, bounded HTTP/queue tests | Pinned weights, tokenizer and runtime; live smoke invocation |
 | Evaluation | Deterministic retrieval function, replay fixtures/report, clustered bootstrap, budgeted task-driver protocol and leakage tests | Real A/B/C task drivers/corpus, independent verification, held-out profile selection and pilot gates |
 
+Explicit MPS eager deployments are covered by service tests for accelerator/OS identity,
+unavailable-runtime rejection, drift before model loading and CUDA-only graph restrictions.
+The current source-validation ledger records actual pinned MPS smoke and bounded-shape
+observations separately from synthetic replay. These do not qualify every allowed shape,
+loaded-host latency or a production profile. Standalone macOS service support does not change
+Linux-only repository-tool registration.
+
 ## Original delivery environment (historical)
 
 The original patch was developed against exact fetched source files from Atomic

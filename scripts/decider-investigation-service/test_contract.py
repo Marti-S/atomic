@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from contract import (CANDIDATE_POLICY_VERSION, DECIDER_REVISION, PRECISION, QUESTION_VERSION,
                       RENDERING_VERSION, ContractError, compact, exact_state_first_item, request_contract, strict_json)
-from backend import LocalDecider, load_manifest, snapshot_files
+from backend import LocalDecider, load_manifest, runtime_identity, snapshot_files
 from server import Service
 
 IDENTITY = {'backendId': 'decider/fixture', 'deploymentFingerprint': 'a' * 64}
@@ -103,6 +103,57 @@ class ContractTests(unittest.TestCase):
         for count in (0, 1, 34):
             with self.assertRaises(ContractError):
                 request_contract(compact(request(count)), IDENTITY)
+
+    def test_mps_runtime_binds_accelerator_and_os_and_refuses_unavailable_device(self):
+        mps = SimpleNamespace(is_available=lambda: True, get_name=lambda: 'Apple fixture GPU')
+        torch = SimpleNamespace(version=SimpleNamespace(cuda=None),
+                                cuda=SimpleNamespace(is_available=lambda: False),
+                                backends=SimpleNamespace(mps=mps))
+        with patch.dict('sys.modules', {'torch': torch}), patch('backend.importlib.metadata.version', return_value='fixture'), \
+                patch('backend.platform.mac_ver', return_value=('15.fixture', '', '')), \
+                patch('backend.platform.machine', return_value='arm64'):
+            identity = runtime_identity('mps')
+            self.assertEqual(identity['device'], 'Apple fixture GPU')
+            self.assertEqual(identity['macos'], '15.fixture')
+            self.assertEqual(identity['machine'], 'arm64')
+            self.assertEqual(runtime_identity('cpu')['device'], 'cpu')
+            self.assertEqual(runtime_identity(), runtime_identity('cpu'))
+            self.assertNotIn('macos', runtime_identity('cpu'))
+            mps.is_available = lambda: False
+            with self.assertRaisesRegex(ContractError, 'model_mismatch'):
+                runtime_identity('mps')
+            mps.is_available = lambda: True
+            del mps.get_name
+            with self.assertRaisesRegex(ContractError, 'model_mismatch'):
+                runtime_identity('mps')
+
+    def test_mps_runtime_drift_prevents_model_loading(self):
+        manifest = {'device': 'mps', 'runtime': {'device': 'approved GPU', 'macos': 'approved OS'}}
+        with patch('backend.load_manifest', return_value=manifest), patch('backend.check_decider_source'), \
+                patch('backend.runtime_identity', return_value={'device': 'different GPU', 'macos': 'new OS'}) as identity:
+            with self.assertRaisesRegex(ContractError, 'model_mismatch'):
+                LocalDecider('/fixture-model', '/fixture-manifest')
+            identity.assert_called_once_with('mps')
+
+    def test_mps_manifest_accepts_eager_and_rejects_cuda_graphs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'model'; root.mkdir()
+            (root / 'model.safetensors').write_bytes(b'fixture-not-real-weights')
+            (root / 'tokenizer.json').write_text('{}')
+            (root / 'decider_config.json').write_text('{"temperature":1.25}')
+            files = snapshot_files(root)
+            manifest = dict(schemaVersion=1, deciderRevision=DECIDER_REVISION, backendId='fixture',
+                            weightsRevision='a'*40, tokenizerRevision='b'*40,
+                            configHash=files['decider_config.json'], temperature=1.25, calibrationReference='fixture-only',
+                            renderingVersion=RENDERING_VERSION, questionVersion=QUESTION_VERSION,
+                            candidatePolicyVersion=CANDIDATE_POLICY_VERSION, precision=PRECISION, maxTotalTokens=1024,
+                            device='mps', dtype='float32', useGraphs=False, runtime={'test': 'fixture'}, files=files)
+            path = Path(tmp) / 'manifest.json'; path.write_bytes(compact(manifest))
+            self.assertEqual(load_manifest(root, path), manifest)
+            manifest['useGraphs'] = True
+            path.write_bytes(compact(manifest))
+            with self.assertRaisesRegex(ContractError, 'model_mismatch'):
+                load_manifest(root, path)
 
     def test_missing_or_changed_calibration_metadata_prevents_startup(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -67,8 +67,8 @@ def load_manifest(snapshot, manifest_path):
     if (manifest['renderingVersion'] != RENDERING_VERSION or manifest['questionVersion'] != QUESTION_VERSION
             or manifest['candidatePolicyVersion'] != CANDIDATE_POLICY_VERSION or manifest['precision'] != PRECISION
             or type(manifest['maxTotalTokens']) is not int or not 0 < manifest['maxTotalTokens'] <= MAX_TOTAL_TOKENS
-            or manifest['device'] not in ('cpu', 'cuda') or manifest['dtype'] not in ('float32', 'bfloat16')
-            or type(manifest['useGraphs']) is not bool or (manifest['device'] == 'cpu' and manifest['useGraphs'])):
+            or manifest['device'] not in ('cpu', 'cuda', 'mps') or manifest['dtype'] not in ('float32', 'bfloat16')
+            or type(manifest['useGraphs']) is not bool or (manifest['device'] != 'cuda' and manifest['useGraphs'])):
         raise ContractError('model_mismatch', 503)
     if not isinstance(manifest['runtime'], dict) or not manifest['runtime'] or any(not isinstance(k, str) or not isinstance(v, str) or not v for k, v in manifest['runtime'].items()):
         raise ContractError('model_mismatch', 503)
@@ -82,7 +82,7 @@ def load_manifest(snapshot, manifest_path):
     return manifest
 
 
-def runtime_identity():
+def runtime_identity(device=None):
     packages = ('torch', 'transformers', 'tokenizers', 'huggingface-hub', 'safetensors', 'numpy', 'flash-linear-attention')
     result = {name: importlib.metadata.version(name) for name in packages}
     result['python'] = platform.python_version()
@@ -90,6 +90,12 @@ def runtime_identity():
     import torch
     result['cuda'] = str(torch.version.cuda)
     result['device'] = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu'
+    if device == 'mps':
+        if not torch.backends.mps.is_available() or not hasattr(torch.backends.mps, 'get_name'):
+            raise ContractError('model_mismatch', 503)
+        result['device'] = torch.backends.mps.get_name()
+        result['macos'] = platform.mac_ver()[0]
+        result['machine'] = platform.machine()
     return result
 
 
@@ -112,7 +118,7 @@ class LocalDecider:
         os.environ['TRANSFORMERS_OFFLINE'] = '1'
         self.manifest = load_manifest(Path(snapshot), Path(manifest_path))
         check_decider_source()
-        if self.manifest['runtime'] != runtime_identity():
+        if self.manifest['runtime'] != runtime_identity(self.manifest['device']):
             raise ContractError('model_mismatch', 503)
         import torch
         from decider.infer import Decider
