@@ -135,6 +135,14 @@ export class EvaluationRepository {
 		this.trace.write("retrieval-start", { name, id, args, ...this.account.metrics() });
 		const tool = name === "read" ? this.read : this.search;
 		const result = await tool.execute(id, args, signal);
+		const rejectLateResult = () => {
+			if (this.retrievalDeadline !== undefined && performance.now() >= this.retrievalDeadline) {
+				// Keep the consumed attempt/charge, but expose late output only in the screened private trace.
+				this.trace.write("retrieval-rejected", { name, id, reason: "deadline", result, ...this.account.metrics() });
+				throw new Handoff("deadline");
+			}
+		};
+		rejectLateResult();
 		await this.assertFresh(this.scope, signal);
 		const text = result.content
 			.filter((part) => part.type === "text")
@@ -147,6 +155,7 @@ export class EvaluationRepository {
 			throw new Handoff("context_limit");
 		if (name === "search" && (result.details?.matchCount ?? 0) > MAXIMUM_LIMITS.maxSearchMatches)
 			throw new Handoff("context_limit");
+		rejectLateResult();
 		this.account.acceptEvidence(text);
 		this.trace.write("retrieval-result", { name, id, text, ...this.account.metrics() });
 		return { content: [{ type: "text", text }], details: result.details };

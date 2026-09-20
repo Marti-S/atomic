@@ -158,3 +158,86 @@ for (const [label, lines, path, returnedLines] of [
 		}
 	});
 }
+
+for (const name of ["read", "search"]) {
+	for (const finishedAt of [199, 200, 201]) {
+		test(`canonical ${name} enforces the shared deadline at completion time ${finishedAt}`, async (t) => {
+			const { root, repo, account, events } = fixture();
+			let now = 100;
+			t.mock.method(performance, "now", () => now);
+			repo.retrievalDeadline = 200;
+			const execute = repo[name].execute.bind(repo[name]);
+			let underlyingResult;
+			let dispatched = 0;
+			repo[name] = {
+				...repo[name],
+				async execute(...args) {
+					underlyingResult = await execute(...args);
+					now = finishedAt;
+					return underlyingResult;
+				},
+			};
+			const args = name === "read" ? { path: "sample.ts:1-1" } : { pattern: "answer", paths: ["sample.ts"] };
+			try {
+				if (finishedAt < repo.retrievalDeadline) {
+					const result = await repo.canonicalCall(name, "on-time", args);
+					assert.match(result.content[0].text, /answer/);
+					assert.equal(account.metrics().evidenceBytes, Buffer.byteLength(result.content[0].text));
+					assert.deepEqual(
+						events.map(({ event }) => event),
+						["retrieval-start", "retrieval-result"],
+					);
+					return;
+				}
+				await assert.rejects(
+					repo.canonicalCall(name, "late", args, undefined, () => dispatched++),
+					(error) => {
+						assert.match(error.message, /deadline/);
+						assert.doesNotMatch(error.message, /answer/);
+						return true;
+					},
+				);
+				assert.equal(dispatched, 1);
+				assert.equal(account.metrics().tools, 1);
+				assert.equal(account.metrics().chargedBytes, 26);
+				assert.equal(account.metrics().bytesScanned, null);
+				assert.equal(account.metrics().evidenceBytes, 0);
+				assert.deepEqual(
+					events.map(({ event }) => event),
+					["retrieval-start", "retrieval-rejected"],
+				);
+				assert.equal(events[1].data.reason, "deadline");
+				assert.deepEqual(events[1].data.result, underlyingResult);
+				assert.equal(events[1].data.evidenceBytes, 0);
+				await assert.rejects(repo.canonicalCall(name, "next", args), /deadline/);
+				assert.equal(account.metrics().tools, 1);
+				assert.equal(events.length, 2);
+			} finally {
+				rmSync(root, { recursive: true, force: true });
+			}
+		});
+	}
+}
+
+test("canonical retrieval also rejects time exhausted while validating the returned evidence", async (t) => {
+	const { root, repo, account, events } = fixture();
+	let now = 100;
+	t.mock.method(performance, "now", () => now);
+	repo.retrievalDeadline = 200;
+	repo.safe = () => {
+		now = 200;
+		return true;
+	};
+	try {
+		await assert.rejects(repo.canonicalCall("read", "validation", { path: "sample.ts:1-1" }), /deadline/);
+		assert.equal(account.metrics().tools, 1);
+		assert.equal(account.metrics().chargedBytes, 26);
+		assert.equal(account.metrics().evidenceBytes, 0);
+		assert.deepEqual(
+			events.map(({ event }) => event),
+			["retrieval-start", "retrieval-rejected"],
+		);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});

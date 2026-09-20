@@ -166,6 +166,12 @@ wrapper rejects oversized read output (bytes or actual returned numbered source 
 bare paths and neighboring context), excess search matches and excess explicit entries. It never
 clips evidence to fit. Invalid/failed calls stay in the private hook trace; `tools` counts admitted
 retrieval attempts, not every attempted tool call.
+The wrapper rechecks the monotonic deadline after awaited canonical execution and immediately
+before evidence acceptance; completion at the deadline is late. A late result consumes its
+retrieval attempt and full-scope charge, but adds no accepted evidence and cannot reach model
+continuation. Its underlying result is retained only in a screened private `retrieval-rejected`
+event with `reason: "deadline"`, never as an accepted `retrieval-result`. Subsequent retrievals
+remain blocked by the same deadline. Production tools and timers are unchanged.
 
 `minimalInputSchema: true` is only for a **separately declared feasibility cohort** with one
 seed path and no line selector: its closed schema binds that seed and objective to the given
