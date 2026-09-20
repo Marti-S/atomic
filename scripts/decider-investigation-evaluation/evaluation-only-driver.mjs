@@ -142,6 +142,9 @@ export class EvaluationRepository {
 			.join("\n");
 		if (!this.safe(text)) throw new Handoff("input_context_unsafe");
 		if (Buffer.byteLength(text) > MAXIMUM_LIMITS.maxReadBytes) throw new Handoff("context_limit");
+		// Bare reads and canonical neighboring context can exceed the requested range.
+		if (name === "read" && [...text.matchAll(/^\d+:/gm)].length > MAXIMUM_LIMITS.maxReadLines)
+			throw new Handoff("context_limit");
 		if (name === "search" && (result.details?.matchCount ?? 0) > MAXIMUM_LIMITS.maxSearchMatches)
 			throw new Handoff("context_limit");
 		this.account.acceptEvidence(text);

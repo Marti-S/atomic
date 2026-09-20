@@ -161,9 +161,11 @@ A exposes canonical `read`/`search` behind the common scope/budget wrapper, with
 interception. B additionally exposes the existing deterministic controller as `investigate_code`;
 C exposes the real Decider controller/transport. Both internal paths use SDK permission/result
 hooks. All arms share the prompt, configured main model, first-tool-start retrieval deadline,
-access/output bounds and canonical implementations. The common wrapper also rejects oversized
-read output, excess search matches and excess explicit entries. Invalid/failed calls stay in
-the private hook trace; `tools` counts admitted retrieval attempts, not every attempted tool call.
+access/output bounds and canonical implementations. Before evidence acceptance, the common
+wrapper rejects oversized read output (bytes or actual returned numbered source lines, including
+bare paths and neighboring context), excess search matches and excess explicit entries. It never
+clips evidence to fit. Invalid/failed calls stay in the private hook trace; `tools` counts admitted
+retrieval attempts, not every attempted tool call.
 
 `minimalInputSchema: true` is only for a **separately declared feasibility cohort** with one
 seed path and no line selector: its closed schema binds that seed and objective to the given

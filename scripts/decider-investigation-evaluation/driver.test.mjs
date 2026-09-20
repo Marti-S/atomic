@@ -4,6 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { Check } from "typebox/value";
+import { createEventBus } from "../../packages/coding-agent/dist/core/event-bus.js";
+import {
+	createExtensionRuntime,
+	loadExtensionFromFactory,
+} from "../../packages/coding-agent/dist/core/extensions/loader.js";
+import { ExtensionRunner } from "../../packages/coding-agent/dist/core/extensions/runner.js";
+import { createInvestigationDispatcher } from "../../packages/coding-agent/dist/core/investigation/guarded-dispatch.js";
 import { EvaluationAccounting } from "./evaluation-only-accounting.mjs";
 import { createMinimalInvestigationSchema, EvaluationRepository } from "./evaluation-only-driver.mjs";
 
@@ -85,3 +92,69 @@ test("evaluation enforces the existing search-match and explicit-entry limits", 
 		rmSync(root, { recursive: true, force: true });
 	}
 });
+
+for (const [label, lines, path, returnedLines] of [
+	["bare", 121, "sample.ts", 121],
+	["context-expanded range", 200, "sample.ts:1-120", 123],
+]) {
+	test(`canonical hooks reject ${label} read above the actual returned-line limit before accepting evidence`, async () => {
+		const { root, account, events } = fixture();
+		try {
+			writeFileSync(join(root, "sample.ts"), "x\n".repeat(lines));
+			const repo = new EvaluationRepository(
+				root,
+				["sample.ts"],
+				account,
+				{ write: (event, data) => events.push({ event, data }) },
+				() => true,
+			);
+			const signal = new AbortController().signal;
+			const raw = await repo.read.execute("raw", { path }, signal);
+			assert.equal([...raw.content[0].text.matchAll(/^\d+:/gm)].length, returnedLines);
+			const hooks = [];
+			const runtime = createExtensionRuntime();
+			const extension = await loadExtensionFromFactory(
+				(pi) => {
+					pi.on("tool_call", (event) => {
+						hooks.push(event);
+					});
+					pi.on("tool_result", (event) => {
+						hooks.push(event);
+					});
+				},
+				root,
+				createEventBus(),
+				runtime,
+				"read-limit-observer",
+			);
+			const runner = new ExtensionRunner([extension], runtime, root, {}, {});
+			const dispatch = createInvestigationDispatcher(
+				{ _extensionRunner: runner, _agentEventQueue: Promise.resolve() },
+				() => {},
+			);
+			await assert.rejects(
+				dispatch(
+					{ toolName: "read", operationId: "limit", parentInvocationId: "investigation", args: { path } },
+					async () => ({ text: (await repo.canonicalCall("read", "limit", { path }, signal)).content[0].text }),
+					signal,
+				),
+				/context_limit/,
+			);
+			assert.equal(account.metrics().evidenceBytes, 0);
+			assert.equal(account.metrics().chargedBytes, lines * 2);
+			assert.equal(account.metrics().tools, 1);
+			assert.deepEqual(
+				events.map(({ event }) => event),
+				["retrieval-start"],
+			);
+			assert.deepEqual(
+				hooks.map(({ type }) => type),
+				["tool_call", "tool_result"],
+			);
+			assert.equal(hooks[1].isError, true);
+			assert.doesNotMatch(hooks[1].content[0].text, /^\d+:/m);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+}
