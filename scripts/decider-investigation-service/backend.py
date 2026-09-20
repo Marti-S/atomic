@@ -151,8 +151,14 @@ class LocalDecider:
         rendered = render_question(question)
         item = exact_state_first_item(self.decider.m.tok, render_state(request['state']), rendered['question'],
                                       rendered['options'], label_table, self.manifest['maxTotalTokens'])
-        # Upstream collation uses masked right-padding to a multiple of 64. Respect lower model limits too.
-        if ((len(item['ids']) + 63) // 64) * 64 > self.manifest['maxTotalTokens']:
+        # Validate the padding of the selected pinned scoring path, not just the unpadded item.
+        tokens = len(item['ids'])
+        if self.decider.eng is not None:
+            from decider.engine import _bucket, T_BUCKETS, LONG_STEP
+            padded_tokens = _bucket(tokens, T_BUCKETS) or ((tokens + LONG_STEP - 1) // LONG_STEP) * LONG_STEP
+        else:
+            padded_tokens = ((tokens + 63) // 64) * 64
+        if padded_tokens > self.manifest['maxTotalTokens']:
             raise ContractError('context_limit')
         return Prepared(question_id, rendered, item)
 

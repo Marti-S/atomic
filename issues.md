@@ -1,0 +1,17 @@
+# Unresolved source-validation gates
+
+Detailed acceptance matrix and evidence: `docs/experimental/decider-investigation-validation.md`.
+
+Logs are retained under `/Users/martistaerfeldt/.atomic/agent/sessions/--Users-martistaerfeldt-dev-atomic-decider-investigation--/subagent-artifacts/validation/5a2fa852` and working copies under `/tmp/atomic-decider-validation`.
+
+- Complete root unit retry (before the final missing-account guard): exit 1, 9932 passed, 23 skipped, 4 failed. `default-tools-setting.test.ts` timed out in `preserves explicit tool option precedence over the setting`, `an unset setting keeps the standard built-in defaults; an empty list keeps none`, and `an unreadable setting value falls back to the standard built-in defaults`. `package-metadata.test.ts` requires absent `docs/mcp.md`. Final whole-root green is unproven. Log: `test-unit-retry.log`.
+- Frozen complete coding-agent suite: exit 1, 4826 passed, 52 skipped, 104 failed across 22 files. Exact names/errors: `package-failures.txt`, full `package-retry.log`. Most failures are test/hook timeouts with some cleanup/persistence fallout; root cause is not established. `system-prompt.test.ts` also expects `docs/mcp.md`.
+- Both mcp expectations and missing path are present at required Atomic base `b2727b019`; merged PR #3119 renamed it to `mcp-servers.md`. This is a base code/test mismatch, **not** an environmental blocker. No unrelated repair or test weakening was authorized.
+- Frozen complete integration closure: exit 1, 1157 passed, 12 skipped, 4 failed. Installed `packed Node consumer types, assets and builtin parity` fails at `test/fixtures/consumer-parity.mjs:371`: completed child task output byteCount is 4, expected 14 for "child complete"; objective-relevant cause remains unclassified, not a justified blocker. `Node workflow prompt nodes route false through the factory's human host` times out at 30s; `built Node overlapping retained workflow dispose` and `cleanup` hit 60s subprocess timeouts. Log: `test-integration-closure.log`. Earlier passing installed-package coverage is superseded. A separate intermediate run was contaminated by a rebuild during imports and is not final evidence.
+- User-authorized pinned-source CPU startup reached authenticated readiness with materialized immutable model/tokenizer revision `b37f7e1ba3fbc9238004cf531fabbee2619973fd` and fingerprint `c6a7af49c5da0eddebecee1b17ac53ba7cfe4a5d6441c24b03f15db59b89f271`. Unchanged live smoke exited 1 with TimeoutError at two seconds; no suitable CUDA runtime exists on this M2 Max host. Service stopped. Logs: `live-service-smoke.log`, `live-server.log`. Readiness is not passing inference or rollout approval.
+
+## Repaired with durable regression evidence
+
+Build/type-library compatibility; installed TypeScript7 focused runner; omitted accessor source; candidate Biome failures; local monotonic operation deadlines including pre-dispatch checks; graph/eager padding caps; SDK awaited disposal; unavailable OS account default-off import; user docs route placement and changelog wording. Final build/check, Linux 50/50 conformance, macOS 38/12 platform skips, Python 12+7, full CI 115/115 and script suite 121/12 platform skips pass. Synthetic fixtures and released changelog sections are unchanged.
+
+No test-file serialization, shared timeout changes, worker caps or additional skips were introduced. Machine load and Node25-versus-CI22 are observations, not established explanations. Required gates remain red; keep this file until resolved.

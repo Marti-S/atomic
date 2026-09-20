@@ -28,6 +28,7 @@
 
 - SDK hosts can provide typed `HostInput` callbacks for confirmations, selection, text and questionnaires without a terminal. Replies are validated and carry session/request identity and cancellation; the onDiagnostic callback receives session-attributed operational messages ([#3105](https://github.com/bastani-inc/atomic/issues/3105)).
 - SDK human-input callbacks now answer durable workflow approvals and stage questionnaires, including nested workflows, with workflow/run identity. Withdrawing or replacing a host keeps unresolved approvals pending and rejects stale replies; the same definition can resume under a different host without repeating checkpointed tool effects ([#3105](https://github.com/bastani-inc/atomic/issues/3105)).
+- Added experimental, default-off code investigation for bounded read-only evidence gathering through an explicitly configured local Decider service on supported Linux hosts. Requires an approved deployment profile; no model snapshot, production thresholds or cloud fallback are supplied.
 
 ### Changed
 

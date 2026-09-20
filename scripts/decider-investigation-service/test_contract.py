@@ -6,10 +6,12 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from contract import (CANDIDATE_POLICY_VERSION, DECIDER_REVISION, PRECISION, QUESTION_VERSION,
                       RENDERING_VERSION, ContractError, compact, exact_state_first_item, request_contract, strict_json)
-from backend import load_manifest, snapshot_files
+from backend import LocalDecider, load_manifest, snapshot_files
 from server import Service
 
 IDENTITY = {'backendId': 'decider/fixture', 'deploymentFingerprint': 'a' * 64}
@@ -34,6 +36,33 @@ def labels(_):
 
 
 class ContractTests(unittest.TestCase):
+    def test_prepare_respects_engine_and_eager_padding_at_lower_limits(self):
+        # Pinned engine buckets differ from collate's 64-token padding. No model is loaded.
+        buckets = [64, 128, 192, 256, 320, 384, 512, 640, 768, 1024, 1280, 1536, 2048]
+        modules = {
+            'decider.systemone': SimpleNamespace(render_state=lambda state: 'state',
+                render_question=lambda question: {'question': 'pick', 'options': ['read', 'handoff']}),
+            'decider.prompt': SimpleNamespace(label_table=labels),
+            'decider.engine': SimpleNamespace(T_BUCKETS=buckets, LONG_STEP=1024,
+                _bucket=lambda n, sizes: next((size for size in sizes if n <= size), None)),
+        }
+        backend = LocalDecider.__new__(LocalDecider)
+        backend.identity = IDENTITY
+        for engine, tokens, limit, accepted in ((False, 400, 448, True), (False, 400, 447, False),
+                (True, 400, 448, False), (True, 400, 512, True),
+                (True, 2100, 2176, False), (True, 2100, 3072, True)):
+            with self.subTest(engine=engine, tokens=tokens, limit=limit):
+                backend.decider = SimpleNamespace(eng=object() if engine else None,
+                    m=SimpleNamespace(tok=CharacterTokenizer()))
+                backend.manifest = {'maxTotalTokens': limit}
+                item = {'ids': [1] * tokens}
+                with patch.dict('sys.modules', modules), patch('backend.exact_state_first_item', return_value=item):
+                    if accepted:
+                        self.assertIs(backend.prepare(compact(request())).item, item)
+                    else:
+                        with self.assertRaisesRegex(ContractError, 'context_limit'):
+                            backend.prepare(compact(request()))
+
     def test_duplicate_object_keys_and_nonfinite_numbers_are_rejected(self):
         for raw in (b'{"a":1,"a":2}', b'{"a":{"b":1,"b":2}}', b'{"a":NaN}', b'{"a":1e999}', b'{"a":Infinity}'):
             with self.subTest(raw=raw), self.assertRaises(ContractError):

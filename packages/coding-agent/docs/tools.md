@@ -14,6 +14,36 @@ Atomic enables these coding tools in normal sessions by default: `read`, `write`
 
 Bundled integrations also provide [public repository search](#code_search), [web fetching](/web-access), and [MCP tools](/mcp-servers).
 
+## `investigate_code` (experimental)
+
+**Disabled by default.** This tool gathers source excerpts and literal search results through a separately managed local Decider service, then returns control to the main model. It does not edit files, run commands, replace the chat model or `routerModel`, or fall back to Jev/cloud. Every ordinary result has `taskComplete: false`.
+
+Enabling the experiment requires Linux x86-64 or arm64 with `openat2`, procfs and `/usr/bin/python3`, an approved repository scope, and a private persistent Atomic session directory outside the repository. Other platforms do not register the tool. Canonical `read` and `search` must be active; tool allowlists must also permit `investigate_code`. Extension restrictions still apply.
+
+No model snapshot or approved production profile is supplied. The service needs already-materialized local model/tokenizer files, a reviewed deployment fingerprint and evaluated admission thresholds. Atomic never downloads weights or starts the service for you. Use the source checkout's [operator setup guide](https://github.com/bastani-inc/atomic/blob/main/docs/experimental/decider-investigation.md) for companion service commands and the full configuration template. It targets Decider revision `a59466dc52f3ad5cc75758f80a4fa0109fd56b08`. Synthetic evaluation fixtures are not calibration or rollout approval.
+
+The only enablement file is `~/.atomic/decider-investigation.json`, under the operating-system account's home directory, not an overridden `HOME`. It must be owned by that account, mode `0600`, and outside the repository. Project settings and extensions cannot enable the feature. Configure `experimental.deciderInvestigation` with explicit `enabled: true`, a literal-loopback endpoint, matching approved profile, repository approval and `tokenSecretRef: "env:ATOMIC_DECIDER_SERVICE_TOKEN"`. Supply that dedicated token in the host environment, never a TypeSafe API key.
+
+After setup, ask the main model to call the tool once. Inputs contain an objective and optional diagnostic text, up to eight seed locations and eight literal terms:
+
+```json
+{
+  "objective": "Gather evidence about structured decision response validation.",
+  "seedLocations": [{ "path": "src/core/structured-output/jev.ts", "line": 60 }],
+  "literalTerms": ["parseResponse", "InvalidDecisionOutputError"]
+}
+```
+
+Paths are plain relative file paths within the approved repository, not URLs or selectors. Adjust the example to your repository root. The main model must assess the returned evidence and continue the task; cancellation is an error, not successful evidence collection.
+
+Keep scopes small. Limits can be lowered, not raised. Default ceilings are five actions, 15 seconds total, two seconds per decision or operation, 5,000 enumerated entries, 16 MiB scanned and 24 KiB of evidence. A limit, source change, denied hook, filtered result, unsafe content or uncertain decision stops collection. Do not broaden permissions to bypass these restrictions.
+
+If the tool is absent, check platform support, explicit enablement, repository approval and the allowlist. Configuration errors require checking file ownership/mode, profile identities and the dedicated token. Service unavailability or deployment mismatch stops investigation without fallback. Review private session audits under your normal retention policy; interrupted traces are never resumed.
+
+An unmapped container UID or failed operating-system account lookup also leaves the tool unavailable. Configure a real OS account to use host approval; changing `HOME` cannot enable it.
+
+To disable, set `enabled` to `false` or remove the global configuration, then refresh or restart the session. Configuration changes prevent further dispatch by an in-flight invocation; cancel the agent run for immediate cooperative cancellation. Stop the separately managed service and revoke its token when no longer needed. No migration or router-model change is required.
+
 ## `code_search`
 
 The bundled web-access extension provides `code_search` for questions about code, architecture, and APIs in a public GitHub repository. It uses DeepWiki MCP at `https://mcp.deepwiki.com/mcp` without an API key or local MCP configuration.

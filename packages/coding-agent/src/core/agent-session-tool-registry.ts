@@ -43,14 +43,18 @@ export function _refreshToolRegistry(
 				sourceInfo: createSyntheticSourceInfo(`<sdk:${definition.name}>`, { source: "sdk" }),
 			})),
 	].filter((tool) => isExposedTool(tool.definition.name));
-	const investigation = isExposedTool("investigate_code") && isExposedTool("read") && isExposedTool("search")
-		? createHostInvestigationTool(this)
-		: undefined;
+	const investigation =
+		isExposedTool("investigate_code") && isExposedTool("read") && isExposedTool("search")
+			? createHostInvestigationTool(this)
+			: undefined;
 	if (investigation) {
 		if (allCustomTools.some((tool) => tool.definition.name === investigation.name)) {
 			throw new Error("Host-managed investigate_code cannot be overridden by another extension.");
 		}
-		allCustomTools.push({ definition: investigation, sourceInfo: createSyntheticSourceInfo("<host:investigate_code>", { source: "builtin" }) });
+		allCustomTools.push({
+			definition: investigation,
+			sourceInfo: createSyntheticSourceInfo("<host:investigate_code>", { source: "builtin" }),
+		});
 	}
 	const definitionRegistry = new Map<string, ToolDefinitionEntry>(
 		Array.from(this._baseToolDefinitions.entries())
@@ -126,7 +130,12 @@ export function _refreshToolRegistry(
 		}
 	}
 
-	if (investigation && !previousRegistryNames.has(investigation.name) && nextActiveToolNames.includes("read") && nextActiveToolNames.includes("search")) {
+	if (
+		investigation &&
+		!previousRegistryNames.has(investigation.name) &&
+		nextActiveToolNames.includes("read") &&
+		nextActiveToolNames.includes("search")
+	) {
 		nextActiveToolNames.push(investigation.name);
 	}
 	this.setActiveToolsByName([...new Set(nextActiveToolNames)]);

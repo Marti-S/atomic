@@ -22,10 +22,20 @@ export interface ActionCandidate {
 	readonly scopeRevision: string;
 }
 export type HandoffReason =
-	| "decider_handoff" | "uncertain" | "no_candidates" | "action_limit" | "deadline"
-	| "no_progress" | "candidate_overflow" | "context_limit" | "source_changed"
-	| "provider_unavailable" | "decision_invalid" | "model_mismatch"
-	| "input_context_unsafe" | "operation_failed";
+	| "decider_handoff"
+	| "uncertain"
+	| "no_candidates"
+	| "action_limit"
+	| "deadline"
+	| "no_progress"
+	| "candidate_overflow"
+	| "context_limit"
+	| "source_changed"
+	| "provider_unavailable"
+	| "decision_invalid"
+	| "model_mismatch"
+	| "input_context_unsafe"
+	| "operation_failed";
 export interface Evidence {
 	id: string;
 	kind: "source_excerpt" | "search_matches";
@@ -46,7 +56,13 @@ export interface InvestigationResult {
 	evidence: Evidence[];
 	remainingCandidates: number;
 	omitted: { candidates: number; matches: number | null; evidenceBytes: number };
-	counters: { actionsDispatched: number; decisionRequests: number; inputTokens: number; outputTokens: number; elapsedMs: number };
+	counters: {
+		actionsDispatched: number;
+		decisionRequests: number;
+		inputTokens: number;
+		outputTokens: number;
+		elapsedMs: number;
+	};
 	traceId: string;
 }
 export interface ChoiceEvidence {
@@ -128,8 +144,18 @@ export interface ScopeSnapshot {
 	readonly entriesEnumerated: number;
 	readonly restrictions: JsonObject;
 }
-export interface SearchMatch { path: string; line: number; text: string; clipped: boolean }
-export interface SourceIdentity { path: string; version: string; contentHash: string; bytesRead: number }
+export interface SearchMatch {
+	path: string;
+	line: number;
+	text: string;
+	clipped: boolean;
+}
+export interface SourceIdentity {
+	path: string;
+	version: string;
+	contentHash: string;
+	bytesRead: number;
+}
 export interface OperationObservation {
 	kind: Evidence["kind"];
 	text: string;

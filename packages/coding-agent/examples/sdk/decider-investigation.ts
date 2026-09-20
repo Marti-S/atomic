@@ -18,9 +18,9 @@ try {
 	});
 	await session.prompt(
 		"Call investigate_code once with the following input, then report the evidence it actually returns. " +
-		"Do not edit files or claim that gathering evidence completes a coding task. " +
-		JSON.stringify({ objective, literalTerms: ["inferStructuredOutput", "inferRouterDecision"] }),
+			"Do not edit files or claim that gathering evidence completes a coding task. " +
+			JSON.stringify({ objective, literalTerms: ["inferStructuredOutput", "inferRouterDecision"] }),
 	);
 } finally {
-	session.dispose();
+	await session.dispose();
 }

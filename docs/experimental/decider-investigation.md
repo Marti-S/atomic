@@ -107,7 +107,8 @@ python scripts/decider-investigation-service/smoke.py \
 This makes one inference, no repository access. It checks identities/probabilities, not task
 accuracy or performance gates. The service scores the exact validated state-first token item;
 it never calls Decider's truncating `build()` or `system_one()` preparation path. The full item
-and masked collation padding must fit 8,192 tokens or the lower declared deployment limit.
+and the selected scoring path's padding must fit 8,192 tokens or the lower declared deployment
+limit. Eager collation pads to multiples of 64; the graph engine uses its pinned shape buckets.
 
 ## Approve a profile and enable a repository
 
@@ -116,6 +117,8 @@ The home directory comes from the operating-system account, not `HOME`, dotenv o
 settings. The file must be owned by that account, mode 0600, and outside the repository.
 A missing file or `enabled: false` means no tool registration, credential resolution or service
 connection. Loading a repository extension does not enable the feature.
+If the OS account cannot be resolved, such as an unmapped container UID, the tool stays
+unavailable without consulting `HOME` or raising a feature-specific startup error.
 
 A reviewed profile must explicitly set both thresholds; neither has a universal default.
 Use the service readiness metadata and the held-out evaluation's profile/provenance. All
@@ -246,8 +249,8 @@ python scripts/decider-investigation-evaluation/replay.py \
   --output /absolute/private/replay-report.json
 ```
 
-The Node suite uses the workspace TypeScript dependency to transpile isolated modules. It does
-not require GPU weights, TypeBox execution or a running service. Run the **normal complete Atomic
+The Node suite uses workspace esbuild to transpile isolated modules and the installed TypeBox
+runtime to validate decisions. It requires no GPU weights or running service. Run the **normal complete Atomic
 build/typecheck, unchanged Jev suites and integration tests as well** in a full checkout. The
 included Jev token-identity regression checks ensure that the extracted change has not modified
 authentication, parser or tournament function bodies; they are not a substitute for the full
