@@ -21,7 +21,14 @@ Original user messages, verbatim:
 
 The controller interpreted these as authorization for supported-startup/runtime/cache discovery and a bounded live service/smoke attempt using exact immutable assets and pinned source. Downloads were limited to documented startup needs. No global feature enablement, production profile or empirical A/B/C claim was authorized.
 
-In round 2 the user selected **"Correct stale tests (Recommended)"** after being informed that the architecture test forbids `docs/mcp.md` while metadata/system-prompt tests require it. The unchanged-suite requirement is relaxed **only** for these two obsolete path expectations. Both topic strings now name canonical `mcp-servers`; their assertions and coverage remain intact. This supersedes the controller's earlier suggestion to add a compatibility document. The attempted compatibility file and runtime-prompt reference were removed. No other existing test, timeout, skip, worker count or suite configuration was changed.
+In round 2 the user selected **"Correct stale tests (Recommended)"** after being informed that the architecture test forbids `docs/mcp.md` while metadata/system-prompt tests require it. Only those two obsolete topic strings changed to canonical `mcp-servers`; assertions and coverage remain intact. The attempted compatibility file and runtime-prompt reference were removed.
+
+The user later said **"continue workflow"**, superseding the evidence-only boundary after the bounded diagnostic pass. The controller subsequently relayed two explicit, narrow test exceptions:
+
+- Make only the stored-credential OAuth refresh-failure case deterministic at the provider HTTP boundary. Preserve exit 5, empty stdout and byte-identical stored auth; separately cover existing timeout taxonomy. No production exit-code or budget changes.
+- Repair only the timing-sensitive detached-output fixture using deterministic control, preserving meaningful actual process/pipe evidence and adding below/above-idle-cutoff coverage. Do not change the production 100ms cutoff, other timers, drain policy or suite budgets. A smaller sleep alone is not sufficient.
+
+All other test-contract changes still require approval. Dependency-level resolver repair remains a proposal, not an authorized or applied change.
 
 ## Repairs and durable regression evidence
 
@@ -40,6 +47,18 @@ Round 2 fixes the consolidated findings:
 1. Fatal UTF-8 decoding previously released the reader without cancelling an unfinished response. Both independent reviewer probes failed. New `scripts/decider-response-cleanup.test.mjs` exercises `inferDeciderDecision` against a real localhost HTTP server that sends an invalid byte and never ends the body. It failed before repair and passes afterward. The shared reader tracks EOF and cancels unfinished bodies in `finally`; normal decoding and Jev parsing are unchanged.
 2. The bundle contamination producer is now proven. `test/ci/native-builtin-bundle-imports.test.ts` invokes the build with Vitest's inherited `NODE_ENV=test`. Before repair, its nine tests passed while generated predicates became `|| true`, selecting fake child output. Explicit runtime NODE_ENV defines at both Bun.build boundaries preserve runtime selection. The same unchanged CI command and packed installed-package tests pass afterward. Full CI rebuilds preserve both runtime predicates; full integration now passes. Logs `bundle-producer-{before,after}`, `bundle-predicates-final` and `integration-final` retain the repeatable check.
 3. The two stale MCP expectations were corrected under the explicit user exception above. The canonical documentation architecture and runtime prompt were not changed.
+
+## Round 3 approved fixture repairs
+
+OAuth coverage now intercepts the child HTTP boundary after dispatcher initialization. A controlled pending response first reproduced the old exit-5 assertion failure, actual exit 2 after the existing authentication deadline. Controlled HTTP 400 now exercises the intended rejection and preserves all three original assertions. A separate timeout case verifies exit 2, explicit timeout stderr, empty stdout and unchanged credential bytes. Both cases assert exactly one intercepted POST; neither requires a live provider. Focused result: two passed, exit 0.
+
+The detached-output fixture uses real parent/descendant processes and inherited pipes. After observing parent exit, the test requests all 30 ticks while controlling only the drain clock. Separate helper cases verify re-arm at 99ms and closure above the 100ms idle cutoff. All five cases pass. Private in-memory mutation checks fail when re-arm or idle cutoff is removed. Production child-process code and timers are unchanged.
+
+Round 3 exact commands, before/after outputs, mutation configurations and checksums are archived at:
+
+`/Users/martistaerfeldt/.atomic/agent/sessions/--Users-martistaerfeldt-dev-atomic-decider-investigation--/subagent-artifacts/validation/bca2f72a`
+
+See `oauth/commands.md` and `drain/commands.md`. Focused checks do not replace complete gates; no full suites were run during this incorporation. Authoritative `npm run check` passed with exit 0 under Node22.19/Bun1.4.2 and isolated HOME; `check.command`, `check.log` and `check.exit` record the environment and result. Qlty on these test paths reported zero analyzed files, so its exit 0 is not substantive smell coverage. Biome remains authoritative.
 
 ## Environment and exact command evidence
 
@@ -71,7 +90,7 @@ Four personal `~/.agents/skills` also contaminated SDK tests expecting no skills
 | `npm run test --workspace=@bastani/atomic` | Latest isolated-HOME exit1:4910pass/52skip/20fail, `package-isolated.log`. Earlier repaired run4908pass/22fail. None is a passing complete gate. |
 | Supplemental Qlty | `qlty smells --no-upgrade-check packages/coding-agent/src/core/structured-output/system-one.ts packages/coding-agent/scripts/copy-builtin-packages.ts` exits0; existing duplication reports retained, no speculative refactoring. Existing configuration preserved. |
 
-Build/check and suites ran sequentially; no generated-data rebuild overlapped integration/package execution. Code was frozen before these runs. Post-validation changes are evidence notes only. Existing suite concurrency and budgets remain unchanged.
+Round 2 build/check and suites ran sequentially; no generated-data rebuild overlapped integration/package execution. Those complete-run results precede the approved round 3 test changes and are not new final-candidate evidence. Existing suite concurrency and budgets remain unchanged. Coordinated complete validation remains pending.
 
 ## Acceptance matrix
 
@@ -102,6 +121,9 @@ Build/check and suites ran sequentially; no generated-data rebuild overlapped in
 | No production profile, fabricated calibration/performance or PR | None added or claimed. Fixture report unchanged; approved startup downloads separate from feature enablement. |
 | Live amendment | Exact-source immutable-asset CPU readiness observed; strict two-second smoke failed. Details below, no live-success claim. |
 | Stale-tests amendment | Exactly two obsolete topic strings changed; no substantive assertion removed or compatibility workaround. |
+| Continue-workflow amendment | Resumed focused repairs; no blind full reruns or unapproved dependency changes. |
+| OAuth test exception | Controlled rejection retains exit5/stdout/auth assertions; separate existing-deadline exit2 case. Focused two-case pass and failed-before evidence archived. |
+| Detached-output test exception | Real post-exit process/pipe coverage plus deterministic 99/101ms cases; five-case pass and mutation failures archived. Production timers unchanged. |
 | Fresh reviewers and approval | Workflow quorum/reducer still required; implementation does not grant acceptance. |
 
 ## Interfaces and state transitions
@@ -120,6 +142,6 @@ The earlier user-authorized attempt materialized Mapika/decider-2b model/tokeniz
 
 Latest unit failures comprise seven 30s timeouts and one bounded shortcut-delivery assertion. Latest package failures comprise eighteen 30s timeouts plus credential exit-code and detached-output timing assertions. The latter two unchanged cases pass in a narrow two-test run in 2.79s. The unchanged default-tools and shortcut files subsequently pass all ten tests in 72.60s (`root-timing-narrow.log`). Earlier narrow default-tools/metadata and runtime-events/system-prompt runs also passed. These checks diagnose timing sensitivity but do not replace the failing complete gates.
 
-Host load reached116 on12 logical CPUs, with unrelated simulator activity, and remained high across later runs. CPU sampling identified Jiti source-import resolution/statSync work. These observations are not proof that every remaining failure is environmental or permission to weaken tests. No broad retry is warranted without a new concrete condition or approved repair. Only the two stale MCP expectations are currently authorized existing-test edits. A decision on further constrained test-duration work or a suitable uncontended validation environment remains necessary if no in-scope source cause is established.
+Host load and Jiti resolution cost are observations, not proof that every failure is environmental. Further scratch resolver instrumentation demonstrates expensive missing-path exception construction; an in-memory nonthrowing preflight reduces that work in a selected lifecycle case. This is diagnostic comparison, not a benchmark or complete-gate proof. No dependency, node_modules or loader patch was applied. A maintained dependency-level remedy requires a separate decision. The newly approved fixture repairs address their demonstrated nondeterminism, but full root/package green and the remaining timeout/shortcut causes are still unproven.
 
 Out-of-scope complexity refactoring is deferred. Required root/package green and independent approval remain unproven; issues.md stays until resolved.

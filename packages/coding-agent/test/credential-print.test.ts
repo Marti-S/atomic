@@ -10,6 +10,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { inspect } from "node:util";
 import { ModelsError } from "@bastani/pi-ai";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
@@ -72,6 +73,35 @@ function cliEnv(agentDir: string): NodeJS.ProcessEnv {
 		ATOMIC_INTERACTIVE_ENGINE_API_KEY: undefined,
 		NO_COLOR: "1",
 	};
+}
+
+/** Override only the child HTTP boundary, after dispatcher initialization preserves custom fetch. */
+function mockOAuthRefresh(agentDir: string, outcome: "reject" | "timeout"): string {
+	const requestsPath = join(agentDir, "oauth-requests.jsonl");
+	const dispatcher = pathToFileURL(resolve(dirname(cliPath), "core/http-dispatcher.ts")).href;
+	writeFileSync(
+		join(agentDir, "oauth-preload.ts"),
+		`import { appendFileSync } from "node:fs";
+await import(${JSON.stringify(dispatcher)});
+globalThis.fetch = async (input, init) => {
+	const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+	appendFileSync(${JSON.stringify(requestsPath)}, JSON.stringify({ url, method: init?.method }) + "\\n");
+	if (${JSON.stringify(outcome)} === "reject") {
+		return new Response(JSON.stringify({ error: "invalid_grant" }), {
+			status: 400, headers: { "content-type": "application/json" },
+		});
+	}
+	return new Promise((_, reject) => {
+		const signal = init.signal;
+		if (signal.aborted) reject(signal.reason);
+		else signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+	});
+};
+`,
+	);
+	// Bun loads this case-local preload before the unchanged real CLI entry point.
+	writeFileSync(join(agentDir, "bunfig.toml"), 'preload = ["./oauth-preload.ts"]\n');
+	return requestsPath;
 }
 
 /** How long a child gets before the pipe-close race is called a hang. */
@@ -1592,16 +1622,48 @@ describe("atomic auth on the wire", () => {
 			const agentDir = agentDirWith(credentials);
 			const authPath = join(agentDir, "auth.json");
 			const before = readFileSync(authPath, "utf8");
+			const requestsPath = mockOAuthRefresh(agentDir, "reject");
 
 			const result = await runCliProcess(
 				["auth", "print-bearer-token", "--model", "claude-sonnet-4-5", "--provider", "anthropic"],
 				{ cwd: agentDir, env: cliEnv(agentDir) },
 			);
 
+			expect(readFileSync(requestsPath, "utf8")).toBe(
+				`${JSON.stringify({ url: "https://platform.claude.com/v1/oauth/token", method: "POST" })}\n`,
+			);
 			expect(result.code).toBe(5);
 			expect(result.stdout).toBe("");
 			// The invalid_grant stranding class: a failed refresh must not clear or
 			// rewrite the credential the user still owns.
+			expect(readFileSync(authPath, "utf8")).toBe(before);
+		},
+		REAL_CLI_SUITE_TIMEOUT_MS,
+	);
+
+	it(
+		"keeps request-auth timeouts distinct from OAuth refresh rejection without changing stored credentials",
+		async () => {
+			const agentDir = agentDirWith({
+				anthropic: { type: "oauth", access: "OLD-ACCESS", refresh: "BOGUS-REFRESH", expires: 1 },
+			});
+			const authPath = join(agentDir, "auth.json");
+			const before = readFileSync(authPath, "utf8");
+			const requestsPath = mockOAuthRefresh(agentDir, "timeout");
+
+			const result = await runCliProcess(
+				["auth", "print-bearer-token", "--model", "claude-sonnet-4-5", "--provider", "anthropic"],
+				{ cwd: agentDir, env: cliEnv(agentDir) },
+			);
+
+			expect(readFileSync(requestsPath, "utf8")).toBe(
+				`${JSON.stringify({ url: "https://platform.claude.com/v1/oauth/token", method: "POST" })}\n`,
+			);
+			expect(result.timedOut).toBe(false);
+			expect(result.signal).toBeNull();
+			expect(result.code).toBe(2);
+			expect(result.stderr).toContain("Request authentication timed out for anthropic.");
+			expect(result.stdout).toBe("");
 			expect(readFileSync(authPath, "utf8")).toBe(before);
 		},
 		REAL_CLI_SUITE_TIMEOUT_MS,
