@@ -10,6 +10,7 @@ import { resolvePath } from "../../utils/paths.ts";
 import { moduleDirFromMetaUrl } from "../../utils/split-launcher.ts";
 import { installHostModuleBridge } from "./host-module-bridge.ts";
 import { getVirtualModules, loadVirtualModules } from "./loader-host-modules.js";
+import { sourceImportOptions } from "./loader-source-imports.ts";
 import { isNativeBuiltinExtensionPath } from "./native-builtin-entries.ts";
 import type { ExtensionFactory } from "./types.ts";
 
@@ -478,6 +479,13 @@ async function importExtensionModule(
 ): Promise<ExtensionFactory | undefined> {
 	const isWindows = process.platform === "win32";
 	const isSingleFileBuild = isBunBinary || isBundledBuild;
+	const aliases = !isSingleFileBuild ? getAliases() : {};
+	// Preserve native/Bun and custom resolution policy. This optimization only
+	// changes Node's ordinary transformed editable-source imports.
+	const sourceOptions =
+		!isSingleFileBuild && !forceTransformedImports && !("Bun" in globalThis)
+			? sourceImportOptions(getTranspileCacheDir, aliases)
+			: {};
 	const jiti = createJiti(resolutionBaseUrl(import.meta.url), {
 		moduleCache: false,
 		...(forceTransformedImports
@@ -487,8 +495,9 @@ async function importExtensionModule(
 				: {}),
 		// A first native import can fall back to transformation too. Always share
 		// the live host instead of re-evaluating its graph through source aliases.
-		virtualModules: await getVirtualModules(),
-		...(!isSingleFileBuild ? { alias: getAliases() } : {}),
+		...sourceOptions,
+		virtualModules: { ...(await getVirtualModules()), ...sourceOptions.virtualModules },
+		...(!isSingleFileBuild ? { alias: aliases } : {}),
 	});
 	const specifier = extensionImportSpecifier(extensionPath, cacheToken);
 	// Transformed evaluations are the loads whose repeat cost is the Windows
