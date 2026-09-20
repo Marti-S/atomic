@@ -39,7 +39,18 @@ async def driver_run(argv, request, timeout_ms):
         result = json.loads(output)
         if not isinstance(result, dict):
             raise ValueError('Driver contract.')
-        for key, maximum in (('tools', 5), ('bytesScanned', 16777216), ('evidenceBytes', 24576)):
+        bounds = [('tools', 5), ('evidenceBytes', 24576)]
+        # Canonical native search exposes no scanned-byte telemetry. A driver may
+        # debit the complete explicit regular-file scope before access instead;
+        # this is a conservative charge, never an actual scan measurement.
+        if result.get('bytesScanned') is not None:
+            bounds.append(('bytesScanned', 16777216))
+        elif (result.get('bytesScannedObserved') is not False
+              or result.get('accountingMethod') != 'full_scope_precharge'):
+            raise ValueError('Unknown scan telemetry requires explicit precharge accounting.')
+        if 'chargedBytes' in result or result.get('bytesScanned') is None:
+            bounds.append(('chargedBytes', 16777216))
+        for key, maximum in bounds:
             if type(result.get(key)) not in (int, float) or not 0 <= result[key] <= maximum:
                 raise ValueError('Driver access/output budget violation.')
         if not isinstance(result.get('traceRef'), str) or not result['traceRef']:

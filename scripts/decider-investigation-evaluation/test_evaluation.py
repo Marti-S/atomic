@@ -46,6 +46,20 @@ class ReplayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Admission'):
             validate(self.rows)
 
+    def test_precharged_bytes_are_reported_separately_from_unknown_scan_measurements(self):
+        for row in self.rows:
+            for run in row['runs'].values():
+                run.update(bytesScanned=None, bytesScannedObserved=False,
+                           chargedBytes=4096, accountingMethod='full_scope_precharge')
+        result = report(self.rows, replicates=100)
+        metrics = result['arms']['C']['metrics']
+        self.assertEqual(metrics['bytesScanned']['n'], 0)
+        self.assertIsNone(metrics['bytesScanned']['p50'])
+        self.assertEqual(metrics['chargedBytes']['p50'], 4096)
+        self.rows[0]['runs']['C']['bytesScannedObserved'] = True
+        with self.assertRaisesRegex(ValueError, 'accounting'):
+            validate(self.rows)
+
     def test_clustered_bootstrap_is_paired_reproducible_and_requires_clusters(self):
         rows = self.rows[:3]
         rows[0]['runs']['A']['verifiedSuccess'] = False
@@ -62,6 +76,26 @@ class BenchmarkTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(timed['status'], 'timeout')
         overflow = await driver_run([sys.executable, '-c', 'print("x" * 1048577)'], request, 1000)
         self.assertEqual(overflow['status'], 'error')
+
+    async def test_unknown_scan_metrics_require_bounded_charges_and_preserve_null(self):
+        base = dict(status='completed', measurementKind='fixture', tools=1,
+                    bytesScanned=None, bytesScannedObserved=False,
+                    chargedBytes=4096, accountingMethod='full_scope_precharge', evidenceBytes=32,
+                    traceRef='private-trace')
+        for changes, expected in (({}, 'completed'),
+                                  ({'chargedBytes': None}, 'error'),
+                                  ({'chargedBytes': 16777217}, 'error'),
+                                  ({'evidenceBytes': None}, 'error'),
+                                  ({'bytesScannedObserved': True}, 'error'),
+                                  ({'accountingMethod': 'measured'}, 'error'),
+                                  ({'bytesScanned': 16777217}, 'error')):
+            payload = dict(base, **changes)
+            command = [sys.executable, '-c', f'print({json.dumps(payload)!r})']
+            result = await driver_run(command, {'serviceState': 'warm'}, 1000)
+            self.assertEqual(result['status'], expected)
+            if expected == 'completed':
+                self.assertIsNone(result['bytesScanned'])
+                self.assertEqual(result['chargedBytes'], 4096)
 
     async def test_no_labels_future_observations_or_fix_are_given_to_driver(self):
         with tempfile.TemporaryDirectory() as directory:

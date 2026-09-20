@@ -60,8 +60,14 @@ def validate(rows):
         for run in row['runs'].values():
             require(run.get('status') in ('completed', 'timeout', 'error'), 'Missing run status.')
             require((run.get('verifiedSuccess') is None or type(run['verifiedSuccess']) is bool), 'Invalid verified outcome.')
-            for name in ('investigationMs', 'totalTaskMs', 'llmTurns', 'tools', 'bytesScanned', 'evidenceBytes'):
+            for name in ('investigationMs', 'totalTaskMs', 'llmTurns', 'tools', 'bytesScanned', 'chargedBytes', 'evidenceBytes'):
                 require(run.get(name) is None or finite(run[name]), 'Invalid numeric metric.')
+            if 'accountingMethod' in run:
+                require(run['accountingMethod'] == 'full_scope_precharge'
+                        and finite(run.get('chargedBytes'))
+                        and run.get('bytesScanned') is None
+                        and run.get('bytesScannedObserved') is False,
+                        'Invalid precharge accounting metadata.')
             require((run.get('evidenceUseful') is None or type(run['evidenceUseful']) is bool), 'Invalid evidence label.')
             require(type(run.get('handoff')) is bool, 'Missing handoff label.')
             require(run.get('serviceState') in ('not_applicable', 'cold', 'warm', 'outage', 'overloaded'), 'Invalid service state.')
@@ -134,7 +140,7 @@ def report(rows, replicates=BOOTSTRAP_REPLICATES):
         verified = [run for run in runs if type(run.get('verifiedSuccess')) is bool]
         usefulness = [run for run in runs if type(run.get('evidenceUseful')) is bool]
         metrics = {}
-        for metric in ('investigationMs', 'totalTaskMs', 'llmTurns', 'tools'):
+        for metric in ('investigationMs', 'totalTaskMs', 'llmTurns', 'tools', 'chargedBytes', 'bytesScanned', 'evidenceBytes'):
             values = [run[metric] for run in runs if run.get(metric) is not None]
             metrics[metric] = dict(n=len(values), p50=quantile(values, .5), p95=quantile(values, .95))
         service = {}
