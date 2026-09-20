@@ -22,6 +22,7 @@ Subsequent user decisions and scoped approvals:
 - The controller relayed approval to make only the detached-output fixture deterministic while retaining actual processes/pipes and adding below/above-idle-cutoff coverage. Production100ms cutoff, other timers and suite budgets were unchanged.
 - **"Keep dependency unchanged (Recommended)"** prohibited a Jiti patch/fork/pin/lockfile change or production monkeypatch. Scratch dependency experiments remain diagnostic only.
 - The user then requested **"find a solution to the issue"** and selected **"Both; keep Jiti unchanged (Recommended)"**. Atomic-owned loading optimizations and supported pinned local inference configuration were authorized to address both full-suite timeouts and the strict local deadline. Fresh editable-source evaluation, host/session identity, isolation, reload semantics, deadlines, assertions and suite concurrency/budgets remain mandatory. No remote GPU purchase, global enablement, PR or calibration/rollout claim is authorized.
+- **"Accept 1,024-token scope (Recommended)"** accepts the verified explicit 1,024-token MPS float32 deployment with pinned identities, unchanged strict deadline and explicit overflow rejection. Full 8,192-token latency qualification is out of scope for this task, not a pending acceptance decision. The default remains unchanged; this is not calibration, rollout approval, a universal latency guarantee or authorization to register the Linux-only tool on macOS.
 
 ## Source and environment identity
 
@@ -32,7 +33,7 @@ Subsequent user decisions and scoped approvals:
 - Initial fresh installation using the isolated HOME's cache failed network `ETIMEDOUT` while unpacking yaml/unpdf. The exact retry used existing `npm_config_cache=/Users/martistaerfeldt/.npm` and `npm_config_prefer_offline=true`, installing567packages with no reported vulnerabilities. No dependency version changed. Both attempts are retained.
 - The retry's initial identity command found Jiti missing after the failed install and exited1; this is not a source-identity failure claim. Post-install `final-source-identity.log` records the successful actual identity checks.
 
-## Current authoritative commands
+## Combined implementation command provenance
 
 Durable private evidence directory:
 
@@ -84,7 +85,7 @@ The supported manifest configuration adds `--device mps --dtype float32 --max-to
 
 Final fresh-process startup reached authenticated readiness in9.187s. The **first post-readiness**1,024-token/33-option request returned HTTP200 in1.296s, warm repetition1.287s. There was no manual large-shape prewarming; only unchanged startup warm-up. Warm smoke-shaped request took0.102s. Overflow1,025tokens returned HTTP422/context_limit in0.0031s, without truncation. The unchanged `smoke.py` exited0, contractPassed:true, repositoryActions:0, qualityGateEvaluated:false. Each client and service kept the existing two-second deadline. All owned services stopped in finally.
 
-These are sampled single-process compatibility observations, not a controlled performance benchmark or universal latency guarantee. Initial raw MPS inference before readiness warm-up took5.615s. MPS2,048 and8,192-token requests still timed out at2.001s; no late result was admitted. The exact supported CUDA graph path needs CUDA-capable hardware/runtime absent here, and no particular additional GPU is proven to meet2s. No remote purchase was made. Full-cap deadline qualification remains open; the demonstrated local solution is the explicit bounded MPS deployment. Standalone macOS service support does not register the Linux-only repository tool on macOS.
+These are sampled single-process compatibility observations, not a controlled performance benchmark or universal latency guarantee. Initial raw MPS inference before readiness warm-up took5.615s. MPS2,048 and8,192-token requests still timed out at2.001s; no late result was admitted. The exact supported CUDA graph path needs CUDA-capable hardware/runtime absent here, and no particular additional GPU is proven to meet2s. No remote purchase was made. Full-cap latency qualification is documented out-of-scope follow-up under the user's accepted 1,024-token scope. Standalone macOS service support does not register the Linux-only repository tool on macOS.
 
 ## Acceptance matrix
 
@@ -109,10 +110,10 @@ These are sampled single-process compatibility observations, not a controlled pe
 | No Jev/cloud fallback or false task completion | Explicit loopback backend; ordinary results retain literal taskComplete:false. |
 | Configuration/code-only rollback | Disable/restart/cancel guidance, no migration or repository-tool writes. |
 | Docs/changelog | Actionable MPS flags, identity drift, readiness and cap rejection documented; loader speed entry and MPS capability under Unreleased only. |
-| Exact commands/commits/clean status/issues | Private logs/checksums/Git receipt; full-cap runtime limitation remains explicit, not a failed-suite claim. |
+| Exact commands/commits/clean status/issues | Private logs/checksums/Git receipt; out-of-scope full-cap qualification is documented here rather than retained as an acceptance issue. |
 | No production profile, implicit downloads, fabricated calibration/performance, PR | None supplied/claimed; initial downloads separately authorized, this slice reused assets offline. |
-| Source freshness, session/host isolation and reload semantics | Ten new real-loader tests,20 independent comparisons and complete lifecycle suites; Jiti dependency unchanged. |
-| Both-solutions amendment | Full-suite timeouts resolved in fresh runs; strict live smoke and sampled bounded MPS requests pass, full8,192 deadline not qualified. |
+| Source freshness, session/host isolation and reload semantics | Eleven real-loader tests, independent comparisons and complete lifecycle suites; Jiti dependency unchanged. |
+| Both-solutions amendment and accepted 1,024-token scope | Full-suite timeouts resolved in recorded complete runs; strict live smoke and sampled bounded MPS requests pass. User explicitly accepts this deployment; full8,192 latency is out of scope, not an unresolved gate. |
 | Cold/first/warm identity and hardware evidence | Exact manifest/runtime/source hashes and HTTP timings above; startup separate from request deadline. |
 | Approved test exceptions only | Two MCP strings and scoped OAuth/drain fixture changes; no other existing assertions/budgets/concurrency modified. |
 | Fresh independent approval | Specialist audits incorporated; workflow reviewers/reducer retain final authority. |
@@ -123,4 +124,30 @@ Results remain plain objects with schemaVersion1, outcome handoff, literal taskC
 
 Invocation flow remains idle/preparing/deciding/guarded action/evidence/deciding or handoff, with error/cancelled exits. Busy refuses without queue; unknown/denied actions do not dispatch; dispatched failures consume actions. Configuration/source changes stop admission; incomplete traces do not resume. Service states remain not-ready, ready-idle, one-running plus at-most-one-queued; overload refuses, deadlines discard queued/late replies without overlapping running inference. MPS-unavailable/drift/graphs mismatches fail closed. Startup readiness is distinct from deadline-qualified requests.
 
-No repository test failure remains. `issues.md` retains only the explicitly unqualified full-cap local inference requirement, not historical root/package failures. Further full-cap accelerator/runtime qualification, held-out A/B/C, Atomic calibration/profile selection, task non-inferiority and rollout approval are not claimed. Unrelated complexity refactoring and the prohibited dependency-level resolver change remain deferred.
+Full-cap accelerator/runtime qualification, held-out A/B/C, Atomic calibration/profile selection, task non-inferiority and rollout approval remain out-of-scope follow-up, not acceptance claims. Unrelated complexity refactoring and the prohibited dependency-level resolver change remain deferred. The JSX repair and its final validation are recorded below.
+
+## Final JSX review repair and accepted-scope closure
+
+All three latest reviewers reproduced the same defect: with `JITI_JSX=true`, ordinary Jiti selects `state.js.jsx` ahead of `state.ts`, while the optimization selected TypeScript. Both the independent reviewer probe and the new production `loadExtensionModule` differential regression failed before repair. The minimal fix adds `JITI_JSX` to the existing explicit-policy bypass; no dependency or runtime policy is rewritten. The regression covers unset/true/false transitions, repeated loading and edits to the appended JSX source with cached transforms. All eleven loader tests and the original reviewer probe now pass.
+
+Final repair evidence is archived privately at:
+
+`/Users/martistaerfeldt/.atomic/agent/sessions/--Users-martistaerfeldt-dev-atomic-decider-investigation--/subagent-artifacts/validation/jsx-repair-final-20260920`
+
+| Final affected command | Result |
+| --- | --- |
+| `npm run build` | Exit0; `build.log`. |
+| `npm run check` | Exit0; `check.log`, both typechecks and shrinkwrap included. |
+| `node /tmp/atomic-risk-loader-probe.mjs` | Before exit1, after exit0; `probe-red.log`, `probe-green.log`. |
+| `npm run test --workspace=@bastani/atomic -- extensions-source-imports.test.ts` | Before new regression exit1; final exit0,11passed; regression logs retained. |
+| `npm run test:ci-contracts` | Exit0,115passed. |
+| `npm run test:scripts` | Exit0,122passed/12platform skips. |
+| `npm run test:unit` | Exit0,9936passed/23skipped,183.92s. |
+| `npm run test:integration` | Final instrumented revalidation exit0,1161passed/12skipped,225.07s. |
+| `npm run test --workspace=@bastani/atomic` | Exit0,4944passed/52skipped,94.84s. |
+
+The first complete integration attempt failed three timing-sensitive cases in411.97s: a built-CLI15s kill, a PostgreSQL doctor elapsed assertion and a workflow-auth child timeout. All three files then passed unchanged focused execution. The parent authorized exactly one full integration revalidation with periodic uptime/process/vm_stat observation; it passed with no concurrent build, code change, test-budget change or worker restriction. Both complete attempts and the focused check remain archived. Observation does not establish the cause of every earlier failure; no failure was hidden or relabeled as a proven environmental exception.
+
+The clean install, Python/service, Linux confinement, replay and exact accepted MPS evidence above remain valid because the JSX repair changes only the Atomic loader policy and its regression. Those unaffected gates were not unnecessarily repeated. Dependency manifests remain unchanged; installed Jiti hash matches the recorded original. Supplemental Qlty analyzed the loader and retained existing conservative-guard complexity findings without suppression. Final scope bookkeeping changes only repository notes. Commit hooks run normally; final SHA and clean status are recorded in the workflow receipt and archived Git evidence.
+
+The user-selected 1,024-token scope resolves the former capacity issue. Full8,192 qualification remains documented out-of-scope follow-up, with defaults and deadlines unchanged. No actual in-scope issue remains after the passing affected gates, so `issues.md` was removed. Final independent review and reducer approval remain separate from these implementation results.

@@ -273,3 +273,34 @@ it("does not consult a reassigned CommonJS require when evaluating a deferred ES
 		rmSync(dir, { recursive: true, force: true });
 	}
 });
+
+it("matches ordinary Jiti through the public loader across JSX policy changes and edited cached sources", async () => {
+	const dir = mkdtempSync(join(tmpdir(), "atomic-source-imports-jsx-"));
+	const previous = process.env.JITI_JSX;
+	try {
+		const entry = join(dir, "entry.ts");
+		writeFileSync(entry, 'import value from "./state.js"; export default () => value;');
+		writeFileSync(join(dir, "state.ts"), 'export default "typescript-sibling";');
+		for (const policy of [undefined, "true", "false", undefined, "true"]) {
+			if (policy === undefined) delete process.env.JITI_JSX;
+			else process.env.JITI_JSX = policy;
+			for (const value of ["appended-jsx", "edited-jsx"]) {
+				writeFileSync(join(dir, "state.js.jsx"), `export default ${JSON.stringify(value)};`);
+				const ordinary = await createJiti(entry, { moduleCache: false, tryNative: false }).import<() => string>(
+					entry,
+					{ default: true },
+				);
+				const expected = policy === "true" ? value : "typescript-sibling";
+				assert.equal(ordinary(), expected);
+				for (let reload = 0; reload < 2; reload++) {
+					const actual = (await loadExtensionModule(entry)) as () => string;
+					assert.equal(actual(), ordinary(), `JITI_JSX=${policy}, source=${value}, reload=${reload}`);
+				}
+			}
+		}
+	} finally {
+		if (previous === undefined) delete process.env.JITI_JSX;
+		else process.env.JITI_JSX = previous;
+		rmSync(dir, { recursive: true, force: true });
+	}
+});

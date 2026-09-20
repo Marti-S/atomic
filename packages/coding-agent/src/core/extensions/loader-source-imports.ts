@@ -108,7 +108,7 @@ export function sourceImportOptions(getCacheDir: () => string, aliases: Record<s
 	// An explicit Jiti policy belongs to the caller. In particular, do not
 	// create a cache directory when caching was disabled through either name.
 	if (
-		["JITI_FS_CACHE", "JITI_CACHE", "JITI_EXTENSIONS", "JITI_TSCONFIG_PATHS", "JITI_TRY_NATIVE"].some(
+		["JITI_FS_CACHE", "JITI_CACHE", "JITI_EXTENSIONS", "JITI_TSCONFIG_PATHS", "JITI_TRY_NATIVE", "JITI_JSX"].some(
 			(key) => process.env[key] !== undefined,
 		)
 	)
