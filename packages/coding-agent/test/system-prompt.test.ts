@@ -237,7 +237,7 @@ describe("buildSystemPrompt", () => {
 	test("routes bundled extension questions to readable guides under the docs root", () => {
 		const prompt = buildSystemPrompt({ cwd: process.cwd(), contextFiles: [], skills: [] });
 		assert.ok(prompt.includes(`Additional docs: ${getDocsPath()}`));
-		for (const topic of ["mcp", "intercom", "web-access", "subagents", "workflows"]) {
+		for (const topic of ["mcp-servers", "intercom", "web-access", "subagents", "workflows"]) {
 			assert.ok(prompt.includes(`docs/${topic}.md`), `Missing documentation route for ${topic}`);
 			assert.match(readFileSync(join(getDocsPath(), `${topic}.md`), "utf8"), /^# /m);
 		}

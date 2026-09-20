@@ -281,6 +281,8 @@ async function bundleEntrypoint(entry: string, outfile: string, label: string): 
 		entrypoints: [entry],
 		target: "node",
 		format: "esm",
+		// Keep runtime test-mode selection independent of the environment invoking the build.
+		define: { "process.env.NODE_ENV": "process.env.NODE_ENV" },
 		external: HOST_PROVIDED_EXTERNALS,
 		plugins: SELF_CONTAINED_BUILTIN_PLUGINS,
 	});
@@ -301,6 +303,8 @@ async function bundleWorkflowBuiltins(): Promise<void> {
 		root: builtinDir,
 		target: "node",
 		format: "esm",
+		// Bun otherwise folds NODE_ENV from the build process, including builds invoked by tests.
+		define: { "process.env.NODE_ENV": "process.env.NODE_ENV" },
 		external: HOST_PROVIDED_EXTERNALS,
 		plugins: SELF_CONTAINED_BUILTIN_PLUGINS,
 		splitting: true,

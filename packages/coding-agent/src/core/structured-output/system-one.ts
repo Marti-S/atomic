@@ -55,6 +55,7 @@ export async function readResponse(
 	if (!reader) throw new InvalidDecisionOutputError(`${name} returned an empty response.`);
 	let bytes = 0;
 	let text = "";
+	let finished = false;
 	const decoder = new TextDecoder("utf-8", { fatal: options.fatalUtf8 ?? false });
 	const cancel = () => {
 		void reader.cancel().catch(() => {});
@@ -72,7 +73,10 @@ export async function readResponse(
 					`${name} response reading failed. Check connectivity and retry explicitly; no automatic retry was made.`,
 				);
 			}
-			if (part.done) break;
+			if (part.done) {
+				finished = true;
+				break;
+			}
 			bytes += part.value.byteLength;
 			if (bytes > (options.maxBytes ?? 1024 * 1024)) {
 				cancel();
@@ -88,6 +92,8 @@ export async function readResponse(
 		}
 	} finally {
 		signal.removeEventListener("abort", cancel);
+		// Decoding can fail before EOF; releasing the lock alone leaves the body/socket alive.
+		if (!finished) cancel();
 		reader.releaseLock();
 	}
 }
