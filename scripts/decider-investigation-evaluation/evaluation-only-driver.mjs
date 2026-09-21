@@ -34,6 +34,8 @@ import {
 	SessionManager,
 	SettingsManager,
 } from "../../packages/coding-agent/dist/index.js";
+import { ModelCallLedger } from "../../packages/coding-agent/dist/core/model-call-accounting.js";
+import { deliverPrefetch, evaluationEntry, PREFETCH_PROMPT } from "./evaluation-entry.mjs";
 import { EvaluationAccounting } from "./evaluation-only-accounting.mjs";
 
 export const PROMPT =
@@ -225,6 +227,8 @@ async function main() {
 		throw new Error("Explicit macOS evaluation invocation required.");
 	const config = JSON.parse(readFileSync(process.argv[3], "utf8"));
 	const request = JSON.parse(readFileSync(0, "utf8"));
+	const entryMode = evaluationEntry(config);
+	const prompt = entryMode === "prefetch" ? PREFETCH_PROMPT : PROMPT;
 	const runDir = join(config.outputRoot, `${request.id}-${request.arm}-${randomUUID()}`);
 	mkdirSync(runDir, { recursive: true, mode: 0o700 });
 	const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -239,9 +243,16 @@ async function main() {
 	const traceRef = join(runDir, "trace.jsonl");
 	writeFileSync(traceRef, "", { mode: 0o600 });
 	const started = performance.now();
+	let deciderDecisionRequests = 0;
+	let postBundleRetrievals = 0;
+	let bundleReturned = false;
+	let handoffReason = null;
+	const candidateCounts = [];
 	const trace = {
 		id: traceRef,
 		write(event, data) {
+			if (event === "retrieval-start" && bundleReturned) postBundleRetrievals++;
+			if (event === "decision-start") candidateCounts.push(data.candidateIds.length);
 			if (data.budgets && Object.hasOwn(data.budgets, "bytesScanned")) {
 				data = {
 					...data,
@@ -253,6 +264,7 @@ async function main() {
 			appendFileSync(traceRef, `${text}\n`);
 		},
 	};
+	const ledger = new ModelCallLedger((record) => trace.write("model-request", record));
 	const account = new EvaluationAccounting(request.budgets);
 	const workspace = join(runDir, "workspace");
 	for (const input of config.scopePaths) {
@@ -335,6 +347,7 @@ async function main() {
 					trace,
 					now: () => performance.now(),
 					decide: async (step, childSignal) => {
+						deciderDecisionRequests++;
 						const ids = [...step.candidates.map((candidate) => candidate.id), "handoff"];
 						const result = await inferDeciderDecision(
 							{
@@ -357,10 +370,13 @@ async function main() {
 					? deterministicBatchedRetrieval(input, deps, signal)
 					: investigateCode(input, deps, signal));
 				handoff = true;
+				bundleReturned = true;
+				handoffReason = result.reason;
 				trace.write("investigation-return", { reason: result.reason, counters: result.counters });
 				return { content: [{ type: "text", text: canonical(result) }], details: result };
 			},
 		});
+	const prefetchTool = entryMode === "prefetch" && request.arm !== "A" ? customTools.pop() : undefined;
 	let status = "completed";
 	try {
 		({ session } = await createAgentSession({
@@ -376,14 +392,16 @@ async function main() {
 			tools: customTools.map((tool) => tool.name),
 			customTools,
 			builtins: { workflows: false, subagents: false, mcp: false, intercom: false, "web-access": false },
-			systemPromptTransform: () => PROMPT,
+			systemPromptTransform: () => prompt,
 		}));
 		trace.write("start", {
 			sourceRoot,
 			sourceCommit: config.sourceCommit,
 			model: `${model.provider}/${model.id}`,
 			thinkingLevel: session.thinkingLevel,
-			promptVersion: hash(PROMPT),
+			promptVersion: hash(prompt),
+			entryMode,
+			candidatePolicyVersion: policy.profile.candidatePolicyVersion,
 			arm: request.arm,
 			serviceState: request.serviceState,
 			scope: repository.scope,
@@ -397,9 +415,21 @@ async function main() {
 			}
 			if (event.type === "tool_execution_end") investigationMs = performance.now() - started;
 		});
-		await session.prompt(
-			`${PROMPT}\nAllowed files: ${JSON.stringify(config.scopePaths)}\nInvestigation input: ${JSON.stringify(request.input)}`,
-		);
+		await ledger.run(async () => {
+			if (prefetchTool) {
+				repository.retrievalDeadline ??= performance.now() + request.budgets.investigationTimeoutMs;
+				const invocationId = `prefetch-${randomUUID()}`;
+				trace.write("prefetch-start", { origin: "host-prefetch", invocationId });
+				try {
+					await deliverPrefetch(session,
+						(signal) => prefetchTool.execute(invocationId, request.input, signal),
+						new AbortController().signal);
+				} finally { investigationMs = performance.now() - started; }
+			}
+			await session.prompt(
+				`${prompt}\nAllowed files: ${JSON.stringify(config.scopePaths)}\nInvestigation input: ${JSON.stringify(request.input)}`,
+			);
+		}, "main");
 		const answers = session.messages
 			.filter((message) => message.role === "assistant")
 			.map((message) => ({
@@ -417,6 +447,13 @@ async function main() {
 	} finally {
 		await session?.dispose();
 	}
+	const modelCalls = ledger.close();
+	if (modelCalls.observerErrors) status = "error";
+	trace.write("call-accounting", {
+		mainAgentTurns: llmTurns, ...modelCalls, deciderDecisionRequests,
+		toolOperations: account.metrics().tools, postBundleRetrievals, candidateCounts, handoffReason,
+		entryMode, candidatePolicyVersion: policy.profile.candidatePolicyVersion,
+	});
 	const result = {
 		status,
 		measurementKind: "live",

@@ -15,6 +15,7 @@ import {
 	record,
 	snapshot,
 } from "./common.js";
+import { GROUNDED_CANDIDATE_POLICY_VERSION } from "./grounded-version.js";
 import type { AdmissionProfile, EffectivePolicy, InvestigateCodeInput, Limits } from "./types.js";
 
 export const DEFAULT_EXCLUDED_COMPONENTS = Object.freeze([
@@ -171,7 +172,8 @@ export function parseProfile(value: unknown): Readonly<AdmissionProfile> {
 		value.temperature <= 0 ||
 		value.renderingVersion !== RENDERING_VERSION ||
 		value.questionVersion !== QUESTION_VERSION ||
-		value.candidatePolicyVersion !== CANDIDATE_POLICY_VERSION ||
+		(value.candidatePolicyVersion !== CANDIDATE_POLICY_VERSION &&
+			value.candidatePolicyVersion !== GROUNDED_CANDIDATE_POLICY_VERSION) ||
 		value.precision !== "decider-four-decimal"
 	)
 		throw new InvestigationToolError("host_configuration");
