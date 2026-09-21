@@ -1,5 +1,7 @@
 import { posix } from "node:path";
 import { canonical, freeze, Handoff, hash, InvestigationToolError } from "./common.js";
+import { continuationRange, firstUncoveredRange, observedRelativeImports, relativeSourceTargets } from "./grounded-candidates.js";
+import { GROUNDED_CANDIDATE_POLICY_VERSION } from "./grounded-version.js";
 import { excluded, normalizePath } from "./policy.js";
 import type {
 	ActionCandidate,
@@ -53,11 +55,14 @@ export class CandidateBuilder {
 	private readonly proposed: Proposed[] = [];
 	private readonly executed = new Set<string>();
 	private readonly covered = new Map<string, Array<[number, number]>>();
+	private readonly eof = new Map<string, number>();
 	private readonly policy: EffectivePolicy;
 	private readonly scope: ScopeSnapshot;
+	private readonly grounded: boolean;
 	constructor(input: InvestigateCodeInput, scope: ScopeSnapshot, policy: EffectivePolicy) {
 		this.policy = policy;
 		this.scope = scope;
+		this.grounded = policy.profile.candidatePolicyVersion === GROUNDED_CANDIDATE_POLICY_VERSION;
 		for (const location of diagnosticLocations(input.diagnosticText ?? ""))
 			this.location(location, { source: "diagnostic" }, 0, false);
 		for (const location of input.seedLocations ?? []) this.location(location, { source: "input" }, 1, true);
@@ -118,12 +123,23 @@ export class CandidateBuilder {
 			}
 			this.covered.set(observation.path, merged);
 		}
+		if (this.grounded && candidate.action.kind === "read_range" && observation.kind === "source_excerpt" &&
+			observation.path === candidate.action.path && observation.endLine !== undefined &&
+			observation.endLine < candidate.action.endLine && observation.omittedEvidenceBytes === 0)
+			this.eof.set(candidate.action.path, observation.endLine);
 		if (!evidence) return;
 		for (const match of observation.matches ?? [])
 			this.location(match, { source: "search_match", evidenceId: evidence.id }, 2, false);
 		for (const location of diagnosticLocations(observation.text))
 			this.location(location, { source: "observed_reference", evidenceId: evidence.id }, 2, false);
-		if (observation.path) {
+		if (this.grounded && observation.path) {
+			for (const specifier of observedRelativeImports(observation.text)) {
+				for (const path of relativeSourceTargets(observation.path, specifier, this.scope, this.policy.excludedPaths))
+					this.location({ path }, { source: "observed_reference", evidenceId: evidence.id }, 2, false);
+			}
+			const action = continuationRange(candidate.action, observation, this.policy.limits.maxReadLines);
+			if (action) this.proposed.push({ action, provenance: { source: "observed_reference", evidenceId: evidence.id }, priority: 4 });
+		} else if (observation.path) {
 			// Only explicitly spelled file references. Never guess an extension or consult source bodies.
 			for (const match of observation.text.matchAll(
 				/(?:from\s*|import\s*|require\(\s*)["'](\.{1,2}\/[\p{L}\p{N}_@+./-]+\.[\p{L}\p{N}_-]+)["']/gu,
@@ -158,7 +174,16 @@ export class CandidateBuilder {
 		});
 		const unique = new Map<string, ActionCandidate>();
 		for (const item of ordered) {
-			const action = item.action;
+			if (this.executed.has(operationKey(item.action))) continue;
+			let action = this.grounded && item.action.kind === "read_range"
+				? firstUncoveredRange(item.action, this.covered.get(item.action.path) ?? [])
+				: item.action;
+			if (!action) continue;
+			if (this.grounded && action.kind === "read_range") {
+				const endLine = Math.min(action.endLine, this.eof.get(action.path) ?? action.endLine);
+				if (action.startLine > endLine) continue;
+				action = { ...action, endLine };
+			}
 			const key = operationKey(action);
 			if (this.executed.has(key) || unique.has(key)) continue;
 			if (
@@ -174,7 +199,9 @@ export class CandidateBuilder {
 				action.kind === "read_range"
 					? `Read ${JSON.stringify(action.path)}, lines ${action.startLine}-${action.endLine}.`
 					: `Search for the exact literal ${JSON.stringify(action.term)} in host-owned scope ${this.scope.id}.`;
-			const description = `${target} Provenance: ${item.provenance.source}${item.provenance.evidenceId ? ` in evidence ${item.provenance.evidenceId}` : ""}.`;
+			let description = `${target} Provenance: ${item.provenance.source}${item.provenance.evidenceId ? ` in evidence ${item.provenance.evidenceId}` : ""}.`;
+			if (this.grounded && item.provenance.source === "observed_reference")
+				description += " Derived retrieval candidate, not a verified module-resolution edge.";
 			if (!this.policy.isSafe(description)) throw new Handoff("input_context_unsafe");
 			unique.set(
 				key,

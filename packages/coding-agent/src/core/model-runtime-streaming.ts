@@ -24,6 +24,7 @@ import {
 } from "@bastani/pi-ai";
 import { usesChatGptCodexTransport, withChatGptCodexTransportRouting } from "./fast-model-routing.ts";
 import { installCodexFastRouteWebSocketIdentity } from "./fast-model-routing-transport.ts";
+import { captureModelCall } from "./model-call-accounting.js";
 import type { ModelRuntimeAuthOverrides } from "./model-runtime-types.ts";
 
 export function mergeHeaders(
@@ -130,16 +131,15 @@ export class ModelRuntimeStreaming {
 		context: Context,
 		options?: ModelsApiStreamOptions<TApi>,
 	): AssistantMessageEventStream {
+		const recordCall = captureModelCall("stream");
 		return lazyStream(model, async () => {
 			const prepared = await this.prepareRequest(
 				model,
 				options as (StreamOptions & ModelsRequestTransforms) | undefined,
 			);
-			return prepared.provider.stream(
-				prepared.model as Model<TApi>,
-				context,
-				this.withCodexRouting(prepared.model, prepared.options) as ApiStreamOptions<TApi>,
-			);
+			const streamOptions = this.withCodexRouting(prepared.model, prepared.options) as ApiStreamOptions<TApi>;
+			recordCall();
+			return prepared.provider.stream(prepared.model as Model<TApi>, context, streamOptions);
 		});
 	}
 
@@ -156,13 +156,12 @@ export class ModelRuntimeStreaming {
 		context: Context,
 		options?: ModelRuntimeSimpleStreamOptions,
 	): AssistantMessageEventStream {
+		const recordCall = captureModelCall("streamSimple");
 		return lazyStream(model, async () => {
 			const prepared = await this.prepareRequest(model, options);
-			return prepared.provider.streamSimple(
-				prepared.model,
-				context,
-				this.withCodexRouting(prepared.model, prepared.options) as SimpleStreamOptions,
-			);
+			const streamOptions = this.withCodexRouting(prepared.model, prepared.options) as SimpleStreamOptions;
+			recordCall();
+			return prepared.provider.streamSimple(prepared.model, context, streamOptions);
 		});
 	}
 
@@ -179,11 +178,13 @@ export class ModelRuntimeStreaming {
 		handle: DeferredHandle,
 		options?: ModelsDeferredFetchOptions,
 	): Promise<AssistantMessage> {
+		const recordCall = captureModelCall("fetchDeferred");
 		return lazyStream(model, async () => {
 			const prepared = await this.prepareRequest(model, options);
 			if (!prepared.provider.fetchDeferred) {
 				throw new ModelsError("provider", `Provider ${model.provider} does not support deferred responses`);
 			}
+			recordCall();
 			return prepared.provider.fetchDeferred(prepared.model, handle, prepared.options as DeferredFetchOptions);
 		}).result();
 	}

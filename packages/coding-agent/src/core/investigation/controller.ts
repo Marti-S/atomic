@@ -14,6 +14,8 @@ import {
 	probability,
 	record,
 } from "./common.js";
+import { compactDecisionState } from "./decision-state.js";
+import { GROUNDED_CANDIDATE_POLICY_VERSION } from "./grounded-version.js";
 import { parseInput } from "./policy.js";
 import type {
 	ActionCandidate,
@@ -233,7 +235,7 @@ export async function investigateCode(
 			if (evidenceBytes >= limits.maxEvidenceBytes) return finish("context_limit");
 			await fresh();
 			const candidateSetHash = hash(canonical(candidates));
-			const state = jsonObject({
+			let state = jsonObject({
 				objective: input.objective,
 				diagnosticText: input.diagnosticText ?? "",
 				evidence: Object.fromEntries(evidence.map((item) => [item.id, item])),
@@ -253,6 +255,8 @@ export async function investigateCode(
 				},
 				omitted,
 			});
+			if (deps.policy.profile.candidatePolicyVersion === GROUNDED_CANDIDATE_POLICY_VERSION)
+				state = compactDecisionState(state);
 			const serializedState = canonical(state);
 			if (bytes(serializedState) > limits.maxStateBytes) return finish("context_limit");
 			if (!deps.policy.isSafe(serializedState)) return finish("input_context_unsafe");
